@@ -7,6 +7,8 @@ from typing import Any, Sequence
 from experiment_doctor.provenance import ProvenanceField, ProvenanceStatus, SourceRef
 from experiment_doctor.schema import (
     AggregationRecord,
+    ArtifactRef,
+    ArtifactType,
     ExperimentFamily,
     ExperimentProject,
     ExperimentRun,
@@ -55,10 +57,36 @@ def metric(name: str, value: float) -> MetricRecord:
     )
 
 
+def attested(
+    value: Any,
+    path: str,
+    line: int | None = None,
+    status: ProvenanceStatus = ProvenanceStatus.CONFIRMED,
+) -> ProvenanceField[Any]:
+    """A value with the citation an evidenced field must have."""
+    return ProvenanceField.of(value, status, SourceRef(path=path, line=line))
+
+
+def artifact(path: str, kind: ArtifactType = ArtifactType.LOG) -> ArtifactRef:
+    return ArtifactRef(path=path, artifact_type=kind)
+
+
+def make_aggregation(**overrides: Any) -> AggregationRecord:
+    """A published record that claims nothing: no reported number, no spread, no attestation."""
+    fields: dict[str, Any] = {
+        "aggregation_id": "F/f/elbo@included",
+        "family_id": "F/f",
+        "metric_name": "-elbo",
+    }
+    fields.update(overrides)
+    return AggregationRecord(**fields)
+
+
 def project_with(
     runs: Sequence[ExperimentRun],
     family: ExperimentFamily,
     aggregations: Sequence[AggregationRecord] = (),
+    artifacts: Sequence[ArtifactRef] = (),
 ) -> ExperimentProject:
     return ExperimentProject(
         root="unit",
@@ -67,4 +95,5 @@ def project_with(
         families=[family],
         runs=list(runs),
         aggregations=list(aggregations),
+        artifacts=list(artifacts),
     )

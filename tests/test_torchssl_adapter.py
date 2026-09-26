@@ -87,6 +87,7 @@ def test_torchssl_seed_is_confirmed_from_the_log_not_the_directory(
         field = runs[name].seed
         assert field.value == seed
         assert field.status is ProvenanceStatus.CONFIRMED
+        assert field.source is not None
         # the evidence is the run log's own Arguments dump, not the folder name
         assert str(field.source.path).endswith("log.txt")
         assert "Arguments.seed" in str(field.source.key)
@@ -107,6 +108,7 @@ def test_torchssl_seed_disagreeing_with_the_directory_is_conflicting(tmp_path: P
     assert run.seed.status is ProvenanceStatus.CONFLICTING
     assert run.seed.value is None
     # v0.1 rule: a conflicting field keeps both candidate sources instead of picking one
+    assert run.seed.source is not None
     note = str(run.seed.source.note)
     assert "Arguments.seed" in note
     assert "directory name" in note
@@ -136,9 +138,13 @@ def test_torchssl_best_and_last_are_separate_metrics_with_an_evidenced_direction
     family = next(f for f in torchssl_project.families if f.family_id == "fixmatch/cifar10_250")
     assert family.primary_metric == "eval/top-1-acc@best"
     # best is not last: selecting the maximum instead of the cap moves the number
-    assert best.value.value > metrics["eval/top-1-acc@last"].value.value
+    assert best.value.value is not None
+    last_value = metrics["eval/top-1-acc@last"].value.value
+    assert last_value is not None
+    assert best.value.value > last_value
     assert best.direction.value is MetricDirection.MAXIMIZE
     assert best.direction.status is ProvenanceStatus.CONFIRMED
+    assert best.direction.source is not None
     assert str(best.direction.source.path).endswith("fixmatch.py")
     # the citation is a real one: the cited line states the comparison the policy uses
     cited = _cited(best.direction.source)
@@ -191,6 +197,7 @@ def test_torchssl_aggregation_recomputes_mean_and_population_std(
     assert best.values == pytest.approx([90.12, 89.88, 90.42], abs=1e-9)
     assert best.mean == pytest.approx(90.14, abs=1e-9)
     assert best.std == pytest.approx(0.22090722, abs=1e-6)
+    assert best.std is not None
     # this project's published +/- is the std itself, not the standard error
     assert best.std_ddof == 0
     assert best.spread_basis is SpreadBasis.STANDARD_DEVIATION

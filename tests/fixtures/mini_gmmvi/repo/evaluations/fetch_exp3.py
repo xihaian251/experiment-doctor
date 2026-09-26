@@ -38,3 +38,9 @@ if __name__ == "__main__":
                     ["samtrux_gmm20"],
                     secondary_metrics=["num_detected_modes"])
     fetch_exp3_hyperopt("mini/gmmvi-search", "Planar4", ["samtrux_planar_4"])
+
+
+def format_elbos(all_elbos):
+    this_elbo = dataframes[i][metric].to_numpy()[-1]
+    all_elbos.append(this_elbo)
+    print(f"Elbo: {np.mean(all_elbos):.2f} +/- {3 / np.sqrt(len(all_elbos)) * np.std(all_elbos):.2f}")

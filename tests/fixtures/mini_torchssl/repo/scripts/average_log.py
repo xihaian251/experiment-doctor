@@ -28,3 +28,12 @@ round(np.mean, 2) +/- round(np.std, 2) cell writer.
 #         final_res[exp_name]['BestAcc'].append(s[1]['BestAcc']*100)
 # cell writer
 # worksheet.write(algs.index(alg)+1,j+1,str(round(np.mean(v[show_acc[i]]),2))+u"±"+str(round(np.std(v[show_acc[i]]),2)))
+
+
+# The two active statements the statistics reader cites, in the original's shape.
+def record(stat):
+    return {'BestAcc': stat['bestAcc'], 'Finish': True}
+
+
+def cell(values):
+    return str(round(np.mean(values), 2)) + u"\u00b1" + str(round(np.std(values), 2))

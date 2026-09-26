@@ -39,6 +39,7 @@ def test_aggregation_population_std() -> None:
 def test_aggregation_spread_basis_is_declared_not_assumed() -> None:
     """A project whose published +/- is std must not have to claim a sqrt(N) division."""
     _, std = mean_std(VALUES, ddof=0)
+    assert std is not None
     standard_error = displayed_spread(std, 1.0, 3)
     standard_deviation = displayed_spread(std, 1.0, 3, SpreadBasis.STANDARD_DEVIATION)
     assert standard_error is not None and standard_deviation is not None

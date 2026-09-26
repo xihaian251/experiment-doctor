@@ -1,0 +1,423 @@
+{
+ "inputs": {
+  "gmmvi_root": "F:\\MLResearch\\experiment-doctor\\phase0-gmmvi",
+  "gmmvi_repo": "F:\\MLResearch\\experiment-doctor\\phase0-gmmvi\\repo",
+  "gmmvi_data": "F:\\MLResearch\\experiment-doctor\\phase0-gmmvi\\extracted\\evaluations\\results",
+  "gmmvi_reported_table": "examples\\gmmvi_reported_table.json",
+  "torchssl_root": "F:\\MLResearch\\experiment-doctor\\acceptance1-torchssl\\downloads",
+  "torchssl_repo": "F:\\MLResearch\\experiment-doctor\\acceptance1-torchssl\\repo",
+  "torchssl_logs": "F:\\MLResearch\\experiment-doctor\\acceptance1-torchssl\\downloads\\logs",
+  "torchssl_reported_table": "examples\\torchssl_reported_table.json"
+ },
+ "oracle": "the v0.1 rule contract applied to two unrelated real projects (expectations only)",
+ "passed": 19,
+ "failed": 0,
+ "projects": {
+  "gmmvi": {
+   "project_id": "phase0-gmmvi",
+   "adapter": "gmmvi-exp3",
+   "runs": 3483,
+   "families": 205,
+   "aggregations": 219,
+   "published_aggregations": 36,
+   "results": 15218,
+   "per_rule": {
+    "ED001": {
+     "PASS": 205
+    },
+    "ED002": {
+     "NOT_APPLICABLE": 98,
+     "INCONCLUSIVE": 107
+    },
+    "ED003": {
+     "INCONCLUSIVE": 3483
+    },
+    "ED004": {
+     "PASS": 3483
+    },
+    "ED005": {
+     "NOT_APPLICABLE": 183,
+     "PASS": 36
+    },
+    "ED006": {
+     "NOT_APPLICABLE": 183,
+     "PASS": 36
+    },
+    "ED007": {
+     "INCONCLUSIVE": 183,
+     "PASS": 36
+    },
+    "ED008": {
+     "NOT_APPLICABLE": 183,
+     "PASS": 36
+    },
+    "ED009": {
+     "INCONCLUSIVE": 3483
+    },
+    "ED010": {
+     "INCONCLUSIVE": 3483
+    }
+   }
+  },
+  "torchssl": {
+   "project_id": "downloads",
+   "adapter": "torchssl",
+   "runs": 6,
+   "families": 2,
+   "aggregations": 4,
+   "published_aggregations": 2,
+   "results": 44,
+   "per_rule": {
+    "ED001": {
+     "PASS": 2
+    },
+    "ED002": {
+     "PASS": 2
+    },
+    "ED003": {
+     "INCONCLUSIVE": 6
+    },
+    "ED004": {
+     "PASS": 6
+    },
+    "ED005": {
+     "PASS": 2,
+     "NOT_APPLICABLE": 2
+    },
+    "ED006": {
+     "PASS": 2,
+     "NOT_APPLICABLE": 2
+    },
+    "ED007": {
+     "PASS": 2,
+     "INCONCLUSIVE": 2
+    },
+    "ED008": {
+     "FAIL": 2,
+     "NOT_APPLICABLE": 2
+    },
+    "ED009": {
+     "PASS": 6
+    },
+    "ED010": {
+     "INCONCLUSIVE": 6
+    }
+   }
+  }
+ },
+ "checks": [
+  {
+   "name": "gmmvi_ed002_unknown_seed_stays_inconclusive",
+   "passed": true,
+   "expected": "no FAIL and no PASS; every family that is not a hyperparameter search is INCONCLUSIVE with zero seed evidence",
+   "observed": {
+    "counts": {
+     "NOT_APPLICABLE": 98,
+     "INCONCLUSIVE": 107
+    },
+    "unexplained_not_applicable": [],
+    "families_with_zero_seed_evidence": 107
+   },
+   "detail": "no run artifact records a seed, so the tool reports that seed provenance cannot be established; it does not call the repetitions duplicated, and it does not abstain on a family that is a genuine set of repetitions"
+  },
+  {
+   "name": "gmmvi_ed006_exclusions_do_not_fail_membership",
+   "passed": true,
+   "expected": "FAIL: 0 with excluded runs present",
+   "observed": {
+    "statuses": [
+     "NOT_APPLICABLE",
+     "PASS"
+    ],
+    "max_family_excluded": 6
+   },
+   "detail": "dropping runs is the project's choice; traceability of the kept set is the question, and the published cells answer it"
+  },
+  {
+   "name": "gmmvi_ed007_published_cells_recompute",
+   "passed": true,
+   "expected": [
+    "PASS"
+   ],
+   "observed": {
+    "published": {
+     "PASS": 36
+    },
+    "reconstructions": {
+     "INCONCLUSIVE": 183,
+     "PASS": 36
+    }
+   },
+   "detail": "the reconstructions this tool built carry no published number, so they are INCONCLUSIVE rather than agreements"
+  },
+  {
+   "name": "gmmvi_ed008_spread_formula_recovered_without_a_fail",
+   "passed": true,
+   "expected": [
+    "PASS",
+    "no FAIL",
+    "scaled_standard_error"
+   ],
+   "observed": {
+    "statuses": [
+     "PASS"
+    ],
+    "implemented": [
+     "scaled_standard_error"
+    ],
+    "documented": [
+     "None"
+    ]
+   },
+   "detail": "the project's own aggregation line divides by sqrt(N) after multiplying by 3, and its prose makes no contrary statement, so ED008 PASSes on the code alone"
+  },
+  {
+   "name": "gmmvi_ed009_termination_is_not_invented",
+   "passed": true,
+   "expected": [
+    "INCONCLUSIVE"
+   ],
+   "observed": {
+    "statuses": [
+     "INCONCLUSIVE"
+    ],
+    "results": 3483
+   },
+   "detail": "a history that stops is not a record of why it stopped; the rule emits a real result per run and leaves the cause unasserted"
+  },
+  {
+   "name": "gmmvi_ed003_no_historical_commit",
+   "passed": true,
+   "expected": [
+    "INCONCLUSIVE",
+    "historical code identity cannot be established from available artifacts"
+   ],
+   "observed": {
+    "statuses": [
+     "INCONCLUSIVE"
+    ],
+    "summaries": [
+     "historical code identity cannot be established from available artifacts"
+    ]
+   },
+   "detail": "the present checkout is never substituted for the code that ran"
+  },
+  {
+   "name": "gmmvi_ed010_environment_declared_not_recorded",
+   "passed": true,
+   "expected": [
+    "INCONCLUSIVE"
+   ],
+   "observed": [
+    "INCONCLUSIVE"
+   ],
+   "detail": "the repository ships a dependency declaration; no run recorded what it loaded"
+  },
+  {
+   "name": "torchssl_ed002_recorded_seeds_pass",
+   "passed": true,
+   "expected": [
+    "PASS"
+   ],
+   "observed": {
+    "statuses": [
+     "PASS"
+    ],
+    "evidence": [
+     [
+      3,
+      3
+     ],
+     [
+      3,
+      3
+     ]
+    ]
+   },
+   "detail": "this project writes its seed into the artifact the run produced, which is the evidence grade ED002 requires"
+  },
+  {
+   "name": "torchssl_ed005_best_selection_documented_and_honoured",
+   "passed": true,
+   "expected": [
+    "PASS",
+    "best",
+    "best"
+   ],
+   "observed": {
+    "statuses": [
+     "PASS"
+    ],
+    "implemented": [
+     "best"
+    ],
+    "documented": [
+     "best"
+    ]
+   },
+   "detail": "the aggregation consumes the log's running best and the README says best; the @last reconstruction carries no published number and so claims nothing"
+  },
+  {
+   "name": "torchssl_ed007_published_cells_recompute",
+   "passed": true,
+   "expected": [
+    "PASS"
+   ],
+   "observed": {
+    "published": {
+     "PASS": 2
+    },
+    "all": {
+     "PASS": 2,
+     "INCONCLUSIVE": 2
+    }
+   },
+   "detail": "the arithmetic is already fixed by the 46-check acceptance; here only the rule's status for those cells is asserted"
+  },
+  {
+   "name": "torchssl_ed008_finds_the_standard_error_claim",
+   "passed": true,
+   "expected": [
+    "FAIL",
+    "HIGH",
+    "standard_error",
+    "standard_deviation"
+   ],
+   "observed": {
+    "statuses": [
+     "FAIL"
+    ],
+    "documented": [
+     "standard_error"
+    ],
+    "implemented": [
+     "standard_deviation"
+    ],
+    "summaries": [
+     "the project documents its +/- as standard_error while the aggregation code computes standard_deviation"
+    ]
+   },
+   "detail": "found from the project's own files: the README calls the +/- a standard error, the aggregation prints np.std without dividing by sqrt(N).  Every published number still recomputes, so this FAIL is not an arithmetic disagreement"
+  },
+  {
+   "name": "torchssl_ed009_terminal_marker_is_read",
+   "passed": true,
+   "expected": [
+    "PASS",
+    "a named cause"
+   ],
+   "observed": {
+    "statuses": [
+     "PASS"
+    ],
+    "causes": [
+     "iteration_cap"
+    ]
+   },
+   "detail": "the log's own completion marker states why the process ended"
+  },
+  {
+   "name": "torchssl_ed004_runtime_configuration_is_run_local",
+   "passed": true,
+   "expected": [
+    "PASS"
+   ],
+   "observed": [
+    "PASS"
+   ],
+   "detail": "each run dumps its effective options into the log it writes"
+  },
+  {
+   "name": "torchssl_ed010_environment_is_not_recorded_by_the_run",
+   "passed": true,
+   "expected": [
+    "INCONCLUSIVE"
+   ],
+   "observed": [
+    "INCONCLUSIVE"
+   ],
+   "detail": "a conda environment named in documentation is not what the run recorded"
+  },
+  {
+   "name": "torchssl_ed003_no_historical_commit",
+   "passed": true,
+   "expected": [
+    "INCONCLUSIVE",
+    "historical code identity cannot be established from available artifacts"
+   ],
+   "observed": {
+    "statuses": [
+     "INCONCLUSIVE"
+    ],
+    "summaries": [
+     "historical code identity cannot be established from available artifacts"
+    ]
+   },
+   "detail": ""
+  },
+  {
+   "name": "same_ten_rules_on_both_projects",
+   "passed": true,
+   "expected": [
+    "ED001",
+    "ED002",
+    "ED003",
+    "ED004",
+    "ED005",
+    "ED006",
+    "ED007",
+    "ED008",
+    "ED009",
+    "ED010"
+   ],
+   "observed": {
+    "gmmvi": [
+     "ED001",
+     "ED002",
+     "ED003",
+     "ED004",
+     "ED005",
+     "ED006",
+     "ED007",
+     "ED008",
+     "ED009",
+     "ED010"
+    ],
+    "torchssl": [
+     "ED001",
+     "ED002",
+     "ED003",
+     "ED004",
+     "ED005",
+     "ED006",
+     "ED007",
+     "ED008",
+     "ED009",
+     "ED010"
+    ]
+   },
+   "detail": "no rule was skipped, specialised or added: 10 rules produced 15218 results on GMMVI and 44 on TorchSSL"
+  },
+  {
+   "name": "entity_granularity_holds",
+   "passed": true,
+   "expected": "each rule's declared entity type only",
+   "observed": {},
+   "detail": "family rules once per family, run rules once per run, aggregation rules once per published or reconstructed cell"
+  },
+  {
+   "name": "rules_contain_no_project_hardcode",
+   "passed": true,
+   "expected": [],
+   "observed": {},
+   "detail": "searched 12 modules under F:/MLResearch/experiment-doctor/v0.1/src/experiment_doctor/rules for the project vocabulary of both accepted projects"
+  },
+  {
+   "name": "inconclusive_is_never_calibrated_as_high",
+   "passed": true,
+   "expected": "MEDIUM for every uncertain result",
+   "observed": [],
+   "detail": "an evidence gap says what cannot be established, so it cannot outrank a contradiction of a published claim"
+  }
+ ]
+}
