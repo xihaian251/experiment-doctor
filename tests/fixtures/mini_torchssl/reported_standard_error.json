@@ -1,0 +1,23 @@
+{
+  "note": "Counterfactual published cells for the mini_torchssl fixture: the same means, but with the spread read the way the fixture README's prose describes it ('standard errors'), i.e. std / sqrt(N). Compared against a record that declares spread_basis=standard_deviation these cells MUST mismatch; they exist to prove the declaration is load-bearing rather than cosmetic.",
+  "cells": [
+    {
+      "family": "fixmatch/cifar10_250",
+      "metric": "eval/top-1-acc@best",
+      "variant": "included",
+      "value": 90.14,
+      "spread": 0.13,
+      "decimals": 2,
+      "source": "fixture README cell, read as a standard error"
+    },
+    {
+      "family": "flexmatch/cifar10_250",
+      "metric": "eval/top-1-acc@best",
+      "variant": "included",
+      "value": 86.25,
+      "spread": 0.18,
+      "decimals": 2,
+      "source": "fixture README cell, read as a standard error"
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+name: ssl
+channels:
+  - pytorch
+dependencies:
+  - cudatoolkit=10.2.89=hfd86e86_1
+  - numpy=1.21.5=py37h7c044a7_1
+  - python=3.7.10=hdb3f193_0
+  - pytorch=1.7.1=py3.7_cuda10.2.89_cudnn7.6.5_0
+  - pip:
+    - pyyaml==5.4.1
+    - torchvision==0.8.2

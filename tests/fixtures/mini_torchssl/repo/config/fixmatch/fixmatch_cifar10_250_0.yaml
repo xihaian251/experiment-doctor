@@ -1,0 +1,8 @@
+# synthetic seed-0 config; the fixture's logs are the source of truth
+alg: fixmatch
+dataset: cifar10
+num_labels: 250
+seed: 0
+num_train_iter: 1048576
+num_eval_iter: 5000
+dist_url: env://localhost:10999

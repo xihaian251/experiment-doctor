@@ -81,6 +81,18 @@ class ComparisonStatus(str, Enum):
     UNKNOWN = "UNKNOWN"
 
 
+class SpreadBasis(str, Enum):
+    """What a project's published ``±`` is, per its own aggregation code.
+
+    v0.1's core recomputation originally assumed every project divides by
+    ``sqrt(N)``.  Real projects do not all do that: some publish the spread of
+    the runs themselves.  The basis is declared, never guessed.
+    """
+
+    STANDARD_ERROR = "standard_error"
+    STANDARD_DEVIATION = "standard_deviation"
+
+
 class IdentityStatus(str, Enum):
     """Run-identity check outcome.  Deliberately not PASS/FAIL."""
 
@@ -306,9 +318,13 @@ class ExperimentFamily(BaseModel):
 class AggregationRecord(BaseModel):
     """One published/aggregated number, and the recomputation of it.
 
-    v0.1 convention: ``recomputed_spread = display_multiplier * std / sqrt(N)``.
-    GMMVI's tables therefore use ``std_ddof=0`` and ``display_multiplier=3``
-    (3x standard error), which is neither ``std`` nor a 95% CI.
+    v0.1 convention: ``spread_basis`` declares whether the project's ``±`` is a
+    standard error (``display_multiplier * std / sqrt(N)``, the default) or the
+    standard deviation itself (``display_multiplier * std``).  ``std_ddof`` picks
+    the estimator.  GMMVI's tables use ``standard_error`` with ``std_ddof=0`` and
+    ``display_multiplier=3`` (3x standard error), which is neither ``std`` nor a
+    95% CI; TorchSSL's use ``standard_deviation`` with ``std_ddof=0`` and
+    ``display_multiplier=1``, whatever the prose around the table calls them.
     ``statistic`` declares what the central value is; v0.1 only recomputes
     ``"mean"``, anything else stays ``UNKNOWN`` rather than being assumed.
     """
@@ -325,6 +341,7 @@ class AggregationRecord(BaseModel):
     mean: float | None = None
     std: float | None = None
     std_ddof: int = 0
+    spread_basis: SpreadBasis = SpreadBasis.STANDARD_ERROR
     display_multiplier: float = 1.0
     reported_value: float | None = None
     reported_spread: float | None = None

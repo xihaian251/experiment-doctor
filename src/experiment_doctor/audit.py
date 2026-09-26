@@ -32,6 +32,7 @@ from experiment_doctor.schema import (
     IdentityStatus,
     RunStatus,
     Severity,
+    SpreadBasis,
 )
 
 #: A run counts as "seed evidence" only when a project artifact recorded the value.
@@ -50,10 +51,17 @@ def mean_std(values: Sequence[float], ddof: int = 0) -> tuple[float | None, floa
     return mean, math.sqrt(variance)
 
 
-def displayed_spread(std: float | None, multiplier: float, n: int) -> float | None:
-    """``multiplier * std / sqrt(n)``, i.e. the project's own reported spread rule."""
+def displayed_spread(
+    std: float | None,
+    multiplier: float,
+    n: int,
+    basis: SpreadBasis = SpreadBasis.STANDARD_ERROR,
+) -> float | None:
+    """The project's own reported spread rule, as declared on the record."""
     if std is None or n <= 0:
         return None
+    if basis is SpreadBasis.STANDARD_DEVIATION:
+        return multiplier * std
     return multiplier * std / math.sqrt(n)
 
 
@@ -664,7 +672,9 @@ def check_aggregation_recompute(
     record.mean = mean
     record.std = std
     record.recomputed_value = mean
-    record.recomputed_spread = displayed_spread(std, record.display_multiplier, record.n)
+    record.recomputed_spread = displayed_spread(
+        std, record.display_multiplier, record.n, record.spread_basis
+    )
 
     mean_match: bool | None = None
     spread_match: bool | None = None

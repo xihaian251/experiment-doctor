@@ -145,8 +145,10 @@ def render_markdown(project: ExperimentProject, audit: AuditResult | None) -> st
         statuses = Counter(record.comparison_status.value for record in project.aggregations)
         lines.append(f"- records: {len(project.aggregations)} ({_format_counter(statuses)})")
         lines.append(
-            "- recomputation is done from the member runs' final metric values, with the record's own "
-            "``std_ddof`` and ``display_multiplier * std / sqrt(N)`` spread"
+            "- recomputation is done from the member runs' reported metric values, with the record's "
+            "own ``std_ddof`` and its declared ``spread_basis``: ``standard_error`` = "
+            "``display_multiplier * std / sqrt(N)`` (the default), ``standard_deviation`` = "
+            "``display_multiplier * std``"
         )
         lines.append("")
         lines.append("| aggregation | metric | N | recomputed | reported | status |")

@@ -1,0 +1,33 @@
+{
+  "note": "Transcription of the two published TorchSSL cells this acceptance audits, NOT of any recomputation. Values were read off the CIFAR-10 block of the 'Main Results' table in TorchSSL/TorchSSL's README.md at clone commit f26e1d42967cec7f7c8a00c2e7ff9219d8ab7c92; the column assignment was verified against the header row ('40', '250', '4000' under CIFAR-10) and the row assignment against the method name in the first column. This file is an audit input only: experiment-doctor recomputes every number from the run logs and compares them with these cells.",
+  "source": {
+    "project": "TorchSSL/TorchSSL",
+    "table": "README.md 'Main Results' > '### CIFAR-10 and CIFAR-100', CIFAR-10 / 250 labels column",
+    "repository_commit": "f26e1d42967cec7f7c8a00c2e7ff9219d8ab7c92",
+    "claim": "best accuracies with standard errors",
+    "claim_source": "README.md:58",
+    "plus_minus_semantics": "README.md:58 calls the published '+/-' 'standard errors'. The project's own aggregation script (scripts/average_log.py:132) writes 'round(np.mean(values),2) + U+00B1 + round(np.std(values),2)', where np.std is the population standard deviation (default ddof=0) over the seed group, not std/sqrt(N). The prose and the code disagree; this transcription records the printed digits, and the audit's spread_basis declaration decides which recomputation is compared with them.",
+    "reported_basis": "percent accuracy (scripts/average_log.py:92 multiplies the logged fraction by 100 before aggregating)",
+    "seed_set_claim": "README.md:58 states random seeds 0,1,2 were used for all experiments"
+  },
+  "cells": [
+    {
+      "family": "fixmatch/cifar10_250",
+      "metric": "eval/top-1-acc@best",
+      "variant": "included",
+      "value": 95.14,
+      "spread": 0.05,
+      "decimals": 2,
+      "source": "README.md:76 CIFAR-10 / 250 column, FixMatch row ('95.14±0.05')"
+    },
+    {
+      "family": "flexmatch/cifar10_250",
+      "metric": "eval/top-1-acc@best",
+      "variant": "included",
+      "value": 95.02,
+      "spread": 0.09,
+      "decimals": 2,
+      "source": "README.md:77 CIFAR-10 / 250 column, FlexMatch row ('95.02±0.09')"
+    }
+  ]
+}

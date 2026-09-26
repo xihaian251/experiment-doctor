@@ -1,0 +1,23 @@
+{
+  "note": "Synthetic published cells for the mini_torchssl fixture, in the shape TorchSSL's own README table has: mean accuracy and the spread its aggregation script writes, round(np.std(v), 2) with np.std's default ddof=0.",
+  "cells": [
+    {
+      "family": "fixmatch/cifar10_250",
+      "metric": "eval/top-1-acc@best",
+      "variant": "included",
+      "value": 90.14,
+      "spread": 0.22,
+      "decimals": 2,
+      "source": "fixture README cell"
+    },
+    {
+      "family": "flexmatch/cifar10_250",
+      "metric": "eval/top-1-acc@best",
+      "variant": "included",
+      "value": 86.25,
+      "spread": 0.25,
+      "decimals": 2,
+      "source": "fixture README cell"
+    }
+  ]
+}

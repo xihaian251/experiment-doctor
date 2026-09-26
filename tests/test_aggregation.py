@@ -18,6 +18,7 @@ from experiment_doctor.schema import (
     ExperimentProject,
     Finding,
     RunStatus,
+    SpreadBasis,
 )
 from tests.builders import make_family, make_run, metric, project_with
 
@@ -33,6 +34,45 @@ def test_aggregation_population_std() -> None:
     assert spread is not None and math.isclose(spread, 3.0 * std / math.sqrt(3), rel_tol=1e-12)
     # The published "+/- 3 sigma" of a 3-seed table is 3x the standard error, not std.
     assert spread < std * 3.0
+
+
+def test_aggregation_spread_basis_is_declared_not_assumed() -> None:
+    """A project whose published +/- is std must not have to claim a sqrt(N) division."""
+    _, std = mean_std(VALUES, ddof=0)
+    standard_error = displayed_spread(std, 1.0, 3)
+    standard_deviation = displayed_spread(std, 1.0, 3, SpreadBasis.STANDARD_DEVIATION)
+    assert standard_error is not None and standard_deviation is not None
+    assert math.isclose(standard_deviation, std, rel_tol=1e-12), "std is not divided by sqrt(N)"
+    assert math.isclose(standard_deviation, standard_error * math.sqrt(3), rel_tol=1e-12)
+    # The default keeps every pre-existing record on the old rule.
+    assert displayed_spread(std, 3.0, 3) == displayed_spread(
+        std, 3.0, 3, SpreadBasis.STANDARD_ERROR
+    )
+
+
+def test_spread_basis_reaches_the_recomputation() -> None:
+    runs = [
+        make_run(f"r{i}", metrics=[metric("acc", value), metric("acc@best", value)])
+        for i, value in enumerate(VALUES)
+    ]
+    family = make_family(primary_metric="acc@best")
+    record = AggregationRecord(
+        aggregation_id="F/f/acc@best@included",
+        family_id="F/f",
+        metric_name="acc@best",
+        member_run_ids=[run.run_id for run in runs],
+        n=len(runs),
+        std_ddof=0,
+        spread_basis=SpreadBasis.STANDARD_DEVIATION,
+        display_multiplier=1.0,
+        reported_value=2.0,
+        reported_spread=mean_std(VALUES, ddof=0)[1],
+        spread_tolerance=1e-9,
+    )
+    check_aggregation_recompute(record, project_with(runs, family, [record]), [])
+    assert record.recomputed_spread is not None and record.reported_spread is not None
+    assert math.isclose(record.recomputed_spread, record.reported_spread, abs_tol=1e-12)
+    assert record.comparison_status is ComparisonStatus.MATCH
 
 
 def test_aggregation_sample_std() -> None:
