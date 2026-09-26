@@ -28,6 +28,13 @@ from typing import Any
 
 import yaml
 
+from experiment_doctor.adapters.aggregation_claims import (
+    StatisticClaims,
+    collect_claims,
+    find_line,
+    read_lines,
+    readme_of,
+)
 from experiment_doctor.provenance import ProvenanceField, ProvenanceStatus, SourceRef
 from experiment_doctor.scanner import (
     AdapterSpec,
@@ -47,6 +54,7 @@ from experiment_doctor.schema import (
     MetricDirection,
     MetricRecord,
     RunStatus,
+    SelectionPolicy,
 )
 
 #: Tracking metadata columns, not experiment metrics.
@@ -57,6 +65,8 @@ NEGATED_METRICS = {"elbo_fb:"}
 EVAL_DIR_SUFFIX = "_EVAL"
 SKIP_RESULT_DIRS = ("exp1_",)
 FETCH_SCRIPT = Path("evaluations") / "fetch_exp3.py"
+#: The line shape that fixes which observation of a run a CSV contributes.
+FINAL_ROW_KEY = "to_numpy()[-1]"
 CONFIG_FOLDERS = ("exp3 (eval)", "exp3 (hyperopt)")
 CLUSTERWORK_SCRIPT = Path("evaluations") / "clusterwork.py"
 SWEEP_WORKER = Path("hyperopt") / "wandb_sweep.py"
@@ -209,6 +219,7 @@ class GMMVIAdapter(ExperimentAdapter):
         self._history_cache: dict[tuple[str, str], dict[int, HistoryData | None]] = {}
         self._families_cache: list[ExperimentFamily] | None = None
         self._runs_cache: list[ExperimentRun] | None = None
+        self._stat_claims: StatisticClaims | None = None
         self._notes: list[str] = []
 
     # ------------------------------------------------------------------ layout
@@ -280,6 +291,38 @@ class GMMVIAdapter(ExperimentAdapter):
 
     def _fetch_path(self) -> Path:
         return self.repo_root / FETCH_SCRIPT
+
+    def _statistics_claims(self) -> StatisticClaims:
+        """What this project's own fetch script and README state about its reported numbers."""
+        if self._stat_claims is not None:
+            return self._stat_claims
+        found = self._fetch_path()
+        script = found if found.is_file() else None
+        readme = readme_of(self.repo_root)
+        script_rel = relative(self.root, script) if script is not None else FETCH_SCRIPT.as_posix()
+        readme_rel = relative(self.root, readme) if readme is not None else "README.rst"
+        claims = collect_claims(
+            script=script,
+            script_rel=script_rel,
+            readme=readme,
+            readme_rel=readme_rel,
+        )
+        hit = find_line(read_lines(script), FINAL_ROW_KEY)
+        if hit is None:
+            claims.implemented_selection = ProvenanceField.unknown(
+                note=f"{script_rel} never states which row of a run history it aggregates"
+            )
+        else:
+            line, text = hit
+            claims.implemented_selection = ProvenanceField.of(
+                SelectionPolicy.LAST,
+                ProvenanceStatus.CONFIRMED,
+                self._src(script_rel, key=text, line=line),
+                note="each run contributes the last logged row of its history CSV, not its best "
+                "row and not the row of lowest loss",
+            )
+        self._stat_claims = claims
+        return claims
 
     # ------------------------------------------------- fetch_exp3.py semantics
     def _fetch_declarations(self) -> list[FetchCall]:
@@ -1288,6 +1331,10 @@ class GMMVIAdapter(ExperimentAdapter):
         cell = reported.get((family.family_id, metric_name, variant))
         if cell is not None:
             self._attach_reported(record, cell)
+        if variant == "included":
+            # Only the project's own published path has a statement behind it; the
+            # all_completed variant is this tool's counterfactual and attests nothing.
+            self._statistics_claims().apply_to(record)
         return record
 
     def _reported_cells(self) -> dict[tuple[str, str, str], dict[str, Any]]:

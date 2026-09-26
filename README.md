@@ -24,8 +24,12 @@ experiment-doctor --help
 # What is in there? (families, run candidates, artifacts, provenance coverage)
 experiment-doctor scan /path/to/project
 
-# The five checks -> report.json + report.md
+# The five checks + the ten formal rules -> report.json + report.md
 experiment-doctor audit /path/to/project -o experiment-doctor-report
+
+# The formal rule registry (ED001-ED010) and the entity each one is evaluated against
+experiment-doctor rules
+experiment-doctor rules --json
 
 # Which adapters exist and what each one understands
 experiment-doctor adapters
@@ -54,6 +58,27 @@ Every field carries an evidence grade — `CONFIRMED`, `SUPPORTED`, `INFERRED`, 
 `CONFLICTING` — plus its source (`path:key:line`). There is deliberately no composite
 trust score.
 
+## The ten formal rules
+
+`ED001`-`ED010` are the formal rule set: one question per rule, one result per entity
+(`family`, `run` or `aggregation`), and exactly five statuses — `PASS`, `FAIL`,
+`INCONCLUSIVE`, `NOT_APPLICABLE`, `NOT_RUN`. Severity (`INFO`/`LOW`/`MEDIUM`/`HIGH`) is
+reported independently, there is no combined score, and an absent piece of evidence is
+never promoted into a contradiction. Contracts: [docs/rules/](docs/rules/).
+
+| id | question | entity |
+| --- | --- | --- |
+| ED001 | do the runs of a family share one experiment identity? | family |
+| ED002 | are the repetitions backed by distinct, recorded seeds? | family |
+| ED003 | does an artifact name the code revision that ran? | run |
+| ED004 | is the effective configuration recoverable from the run itself? | run |
+| ED005 | which observation of a run does the published metric stand for? | aggregation |
+| ED006 | which runs are inside the published mean, and is that traceable? | aggregation |
+| ED007 | does the published number recompute from the member values? | aggregation |
+| ED008 | is the `±` what the project says it is? | aggregation |
+| ED009 | does an artifact say why the run stopped? | run |
+| ED010 | is the runtime environment recorded by the run? | run |
+
 ## Adapters
 
 `generic` walks the directory tree, classifies artifacts by extension, and emits explicit
@@ -68,10 +93,16 @@ share a group name), and the `README.rst` exclusion prose, which is the only rec
 code and the artifacts are split across directories, point `audit` at the directory that
 contains both (the adapter probes `repo/`, `extracted/evaluations/results/`, and upward).
 
+`torchssl` reads the shared run logs (`<algorithm>_<dataset>_<labels>_<seed>/log.txt`): the
+seed and effective configuration from the `Arguments` dump, `best`/`last` accuracy from the
+per-evaluation lines, the family key from `main.py`, and the aggregation semantics
+(mean ± std, `num_models` repetitions) from `scripts/average_log.py`. Options: `repo_root`,
+`logs_root`, `reported_table`.
+
 ## Development
 
 ```bash
-python -m pytest -q                              # 16 tests, incl. tests/fixtures/mini_gmmvi
+python -m pytest -q                              # 95 tests, incl. the two mini fixtures
 python -m ruff check src tests scripts && python -m ruff format --check src tests scripts
 python -m mypy src scripts tests
 ```
@@ -87,6 +118,25 @@ python scripts/run_gmmvi_acceptance.py --repo /path/to/repo \
 
 Its expected numbers are Phase 0 forensic findings used as a test oracle; nothing under
 `src/` knows them.
+
+```bash
+# 46 checks against the real TorchSSL logs
+python scripts/run_torchssl_acceptance.py --repo /path/to/repo \
+    --logs-root /path/to/downloads/logs \
+    --reported-table examples/torchssl_reported_table.json -o acceptance.json
+
+# 19 checks: the ten formal rules on both projects, in one pass
+python scripts/run_rule_acceptance.py --gmmvi-repo /path/to/gmmvi/repo \
+    --gmmvi-data /path/to/gmmvi/extracted/evaluations/results \
+    --gmmvi-reported-table examples/gmmvi_reported_table.json \
+    --torchssl-repo /path/to/torchssl/repo \
+    --torchssl-logs /path/to/torchssl/downloads/logs \
+    --torchssl-reported-table examples/torchssl_reported_table.json -o rule_acceptance.json
+```
+
+`run_rule_acceptance.py` checks rule behaviour only — which statuses a rule may and may not
+produce for a project whose artifacts look like this — and repeats none of the structural
+assertions above. [rule_acceptance.json](rule_acceptance.json) is the committed result.
 
 ## Not built
 

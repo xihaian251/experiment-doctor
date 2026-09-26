@@ -17,7 +17,12 @@ from enum import Enum
 
 from pydantic import BaseModel, Field, model_validator
 
-from experiment_doctor.provenance import ProvenanceField, ProvenanceStatus, SourceRef
+from experiment_doctor.provenance import (
+    ProvenanceField,
+    ProvenanceStatus,
+    SourceRef,
+    unknown_field,
+)
 
 
 class RunStatus(str, Enum):
@@ -91,6 +96,38 @@ class SpreadBasis(str, Enum):
 
     STANDARD_ERROR = "standard_error"
     STANDARD_DEVIATION = "standard_deviation"
+
+
+class SpreadSemantics(str, Enum):
+    """What a ``±`` actually is, on either side of the ED008 comparison.
+
+    ``SpreadBasis`` says how the recomputation divides; this says what a number
+    *means*.  A project can be internally consistent while its prose calls the
+    same quantity something else, so the implemented side and the documented side
+    are recorded separately and each carries its own evidence.
+    """
+
+    STANDARD_DEVIATION = "standard_deviation"
+    STANDARD_ERROR = "standard_error"
+    SCALED_STANDARD_ERROR = "scaled_standard_error"
+    CONFIDENCE_INTERVAL_HALF_WIDTH = "confidence_interval_half_width"
+    CUSTOM = "custom"
+    UNKNOWN = "unknown"
+
+
+class SelectionPolicy(str, Enum):
+    """Which observation of a run a reported metric stands for (ED005's vocabulary).
+
+    Best and last are different quantities whenever the metric is tracked to a
+    maximum; neither is a proxy for the other and a project is free to publish
+    either one.
+    """
+
+    BEST = "best"
+    LAST = "last"
+    SPECIFIC_STEP = "specific_step"
+    OTHER = "other"
+    UNKNOWN = "unknown"
 
 
 class IdentityStatus(str, Enum):
@@ -350,6 +387,15 @@ class AggregationRecord(BaseModel):
     tolerance: float = 1e-9
     spread_tolerance: float = 1e-9
     comparison_status: ComparisonStatus = ComparisonStatus.UNKNOWN
+    #: What the project's own aggregation code computes the ``±`` to be, evidenced
+    #: by the line that computes it.  UNKNOWN means the formula is not recoverable.
+    implemented_spread: ProvenanceField[SpreadSemantics] = Field(default_factory=unknown_field)
+    #: What the project's prose says the ``±`` is.  UNKNOWN means it never says.
+    documented_spread: ProvenanceField[SpreadSemantics] = Field(default_factory=unknown_field)
+    #: Which observation of a run the code aggregates (ED005's implemented side).
+    implemented_selection: ProvenanceField[SelectionPolicy] = Field(default_factory=unknown_field)
+    #: Which observation of a run the prose claims it published (ED005's documented side).
+    documented_selection: ProvenanceField[SelectionPolicy] = Field(default_factory=unknown_field)
     membership_rule: ProvenanceField[str] = Field(
         default_factory=lambda: ProvenanceField(value=None, status=ProvenanceStatus.UNKNOWN)
     )

@@ -1,7 +1,8 @@
-"""Typer CLI: ``experiment-doctor --help | scan | audit | adapters``.
+"""Typer CLI: ``experiment-doctor --help | scan | audit | rules | adapters``.
 
-v0.1 ships exactly these three commands.  There is no serve/watch/fix/sync/upload:
-the tool is read-only and does not mutate a project.
+v0.1 ships exactly these four commands.  ``rules`` only reads the registry.
+There is no serve/watch/fix/sync/upload: the tool is read-only and does not
+mutate a project.
 """
 
 from __future__ import annotations
@@ -15,6 +16,7 @@ import typer
 from experiment_doctor.adapters import available_adapters, build
 from experiment_doctor.audit import audit_project
 from experiment_doctor.report import render_markdown, scan_summary, write_report
+from experiment_doctor.rules import RULES, rule_catalog, run_rules
 from experiment_doctor.scanner import ExperimentAdapter, scan_project
 
 app = typer.Typer(
@@ -67,7 +69,7 @@ def audit(
         ),
     ),
 ) -> None:
-    """Run the five v0.1 checks and write report.json plus report.md."""
+    """Run the v0.1 checks and formal rules, then write report.json plus report.md."""
     if reported_table is not None and adapter is None:
         raise typer.BadParameter("--reported-table requires --adapter")
     instance: ExperimentAdapter | None = None
@@ -80,18 +82,37 @@ def audit(
         instance = built
     project = scan_project(path, adapter=instance)
     result = audit_project(project)
+    rules = run_rules(project, result)
     json_path, markdown_path = write_report(
-        output, project, result, render_markdown(project, result)
+        output, project, result, render_markdown(project, result, rules), rules
     )
     counts = result.counts
+    rule_fail = sum(1 for r in rules if r.status.value == "FAIL")
+    rule_inconclusive = sum(1 for r in rules if r.status.value == "INCONCLUSIVE")
     typer.echo(
         f"adapter={project.adapter} families={counts['families']} runs={counts['runs']} "
         f"aggregations={counts['aggregations']} "
         f"match={counts['matched']} mismatch={counts['mismatched']} "
-        f"unknown={counts['comparison_unknown']} findings={counts['findings']}"
+        f"unknown={counts['comparison_unknown']} findings={counts['findings']} "
+        f"rules={len(rules)} rule_fail={rule_fail} rule_inconclusive={rule_inconclusive}"
     )
     typer.echo(f"report written: {json_path}")
     typer.echo(f"report written: {markdown_path}")
+
+
+@app.command()
+def rules(
+    as_json: bool = typer.Option(
+        False, "--json", help="Print the registry as JSON instead of aligned text."
+    ),
+) -> None:
+    """List the formal v0.1 rules and the entity each one is evaluated against."""
+    if as_json:
+        typer.echo(json.dumps(rule_catalog(), indent=2, ensure_ascii=False))
+        return
+    for rule in RULES:
+        typer.echo(f"{rule.rule_id}  [{rule.entity_type}]  {rule.title}")
+        typer.echo(f"  {rule.purpose}")
 
 
 @app.command()

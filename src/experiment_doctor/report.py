@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 from collections import Counter
+from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
 from experiment_doctor.audit import AuditResult
+from experiment_doctor.rules import RULES, RuleResult, status_counts
 from experiment_doctor.scanner import provenance_coverage_summary
 from experiment_doctor.schema import (
     ComparisonStatus,
@@ -58,13 +60,23 @@ def scan_summary(project: ExperimentProject) -> dict[str, Any]:
     }
 
 
-def report_payload(project: ExperimentProject, audit: AuditResult | None) -> dict[str, Any]:
-    """Full ``report.json``: scan summary + audit results + project dump."""
+def report_payload(
+    project: ExperimentProject,
+    audit: AuditResult | None,
+    rules: Sequence[RuleResult] | None = None,
+) -> dict[str, Any]:
+    """Full ``report.json``: scan summary + audit results + formal rules + project dump."""
     payload: dict[str, Any] = {"scan": scan_summary(project)}
     if audit is not None:
         payload["audit"] = audit.model_dump(mode="json")
         payload["scan"]["provenance_coverage"] = {
             name: counts.model_dump(mode="json") for name, counts in audit.coverage.items()
+        }
+    if rules is not None:
+        payload["rules"] = [result.model_dump(mode="json") for result in rules]
+        payload["rule_summary"] = {
+            "counts": status_counts(list(rules)),
+            "note": "counts only: v0.1 computes no overall verdict, risk score or confidence number",
         }
     payload["project"] = project.model_dump(mode="json", exclude={"artifacts"})
     payload["project"]["artifact_count"] = len(project.artifacts)
@@ -77,7 +89,125 @@ def coverage_to_dict(project: ExperimentProject, audit: AuditResult | None) -> d
     return provenance_coverage_summary(project.runs)
 
 
-def render_markdown(project: ExperimentProject, audit: AuditResult | None) -> str:
+def render_rule_results(rules: Sequence[RuleResult]) -> list[str]:
+    """The ``Rule Results`` section: counts first, then anomalies, then aggregated passes.
+
+    A run-level rule over thousands of runs must not repeat its evidence thousands of
+    times, so identical summaries collapse into one line with a count.
+    """
+    lines: list[str] = []
+    if not rules:
+        return ["_No formal rules were run._"]
+    counts = status_counts(list(rules))
+    lines.append("| rule | title | entity | PASS | FAIL | INCONCLUSIVE | N/A | NOT_RUN |")
+    lines.append("| --- | --- | --- | --- | --- | --- | --- | --- |")
+    for rule in RULES:
+        row = counts[rule.rule_id]
+        lines.append(
+            f"| {rule.rule_id} | {rule.title} | {rule.entity_type} | "
+            f"{row['PASS']} | {row['FAIL']} | {row['INCONCLUSIVE']} | "
+            f"{row['NOT_APPLICABLE']} | {row['NOT_RUN']} |"
+        )
+    lines.append("")
+    lines.append(
+        "_Each row is one rule counted over the entities it applies to.  There is no "
+        "combined score across rules; read the statuses separately._"
+    )
+
+    by_rule: dict[str, list[RuleResult]] = {rule.rule_id: [] for rule in RULES}
+    for result in rules:
+        by_rule.setdefault(result.rule_id, []).append(result)
+
+    failures = [result for result in rules if result.status.value == "FAIL"]
+    lines.append("")
+    lines.append("### Contradictions (FAIL)")
+    lines.append("")
+    if not failures:
+        lines.append("_No rule found an artifact that contradicts a claim._")
+    else:
+        for result in failures[:_MAX_LISTINGS]:
+            lines.append(_result_line(result))
+            for item in result.evidence[:3]:
+                lines.append(f"    - {item}")
+        if len(failures) > _MAX_LISTINGS:
+            lines.append(f"- _{len(failures) - _MAX_LISTINGS} more in report.json_")
+
+    lines.append("")
+    lines.append("### Open questions (INCONCLUSIVE)")
+    lines.append("")
+    inconclusive = [result for result in rules if result.status.value == "INCONCLUSIVE"]
+    if not inconclusive:
+        lines.append("_Every rule that applied reached a decision._")
+    else:
+        for rule_id, group in _grouped(by_rule):
+            outcomes = [result for result in group if result.status.value == "INCONCLUSIVE"]
+            if not outcomes:
+                continue
+            summaries: dict[str, list[RuleResult]] = {}
+            for result in outcomes:
+                summaries.setdefault(result.summary, []).append(result)
+            if len(summaries) == 1:
+                ((summary, results),) = summaries.items()
+                lines.append(
+                    f"- **{rule_id}** INCONCLUSIVE x{len(results)} - {summary} "
+                    f"(first: `{results[0].entity_id}`)"
+                )
+                for item in results[0].limitations[:2]:
+                    lines.append(f"    - {item}")
+            else:
+                for summary, results in sorted(summaries.items(), key=lambda kv: -len(kv[1]))[:5]:
+                    lines.append(
+                        f"- **{rule_id}** INCONCLUSIVE x{len(results)} - {summary} "
+                        f"(first: `{results[0].entity_id}`)"
+                    )
+                if len(summaries) > 5:
+                    lines.append(
+                        f"    - _{len(summaries) - 5} further distinct summaries for this rule in "
+                        f"report.json_"
+                    )
+
+    lines.append("")
+    lines.append("### Supported and non-applicable results")
+    lines.append("")
+    for rule in RULES:
+        group = by_rule.get(rule.rule_id, [])
+        for status in ("PASS", "NOT_APPLICABLE", "NOT_RUN"):
+            outcomes = [result for result in group if result.status.value == status]
+            if not outcomes:
+                continue
+            distinct = {result.summary for result in outcomes}
+            example = "" if len(distinct) == 1 else f" ({len(distinct)} distinct summaries)"
+            lines.append(
+                f"- **{rule.rule_id}** {status} x{len(outcomes)} - {_clip(outcomes[0].summary)}"
+                f"{example}"
+            )
+    return lines
+
+
+def _clip(text: str, width: int = 120) -> str:
+    if len(text) <= width:
+        return text
+    cut = text[:width]
+    return cut[: cut.rfind(" ")].rstrip() + " ..."
+
+
+def _result_line(result: RuleResult) -> str:
+    return (
+        f"- **{result.rule_id} {result.status.value} ({result.severity.value})** "
+        f"`{result.entity_id}` - {result.summary}"
+    )
+
+
+def _grouped(rules_by_rule: dict[str, list[RuleResult]]) -> list[tuple[str, list[RuleResult]]]:
+    order = [rule.rule_id for rule in RULES]
+    return [(rule_id, rules_by_rule[rule_id]) for rule_id in order if rule_id in rules_by_rule]
+
+
+def render_markdown(
+    project: ExperimentProject,
+    audit: AuditResult | None,
+    rules: Sequence[RuleResult] | None = None,
+) -> str:
     lines: list[str] = []
     summary = scan_summary(project)
     lines.append(f"# Experiment Doctor report - {project.project_id}")
@@ -171,8 +301,19 @@ def render_markdown(project: ExperimentProject, audit: AuditResult | None) -> st
             )
 
     lines.append("")
+    lines.append("## Rule Results")
+    lines.append("")
+    lines.extend(render_rule_results(rules or []))
+
+    lines.append("")
     lines.append("## Findings")
     lines.append("")
+    if audit is not None and rules:
+        lines.append(
+            "_Findings are the check-level observations the audit produced; the formal rule "
+            "outcomes above are the authoritative statements about which claims the artifacts "
+            "support._"
+        )
     if audit is None:
         lines.append("_Audit was not run._")
     elif not audit.findings:
@@ -224,7 +365,11 @@ def render_markdown(project: ExperimentProject, audit: AuditResult | None) -> st
 
 
 def write_report(
-    output_dir: Path, project: ExperimentProject, audit: AuditResult | None, markdown: str
+    output_dir: Path,
+    project: ExperimentProject,
+    audit: AuditResult | None,
+    markdown: str,
+    rules: Sequence[RuleResult] | None = None,
 ) -> tuple[Path, Path]:
     output_dir.mkdir(parents=True, exist_ok=True)
     json_path = output_dir / "report.json"
@@ -232,7 +377,8 @@ def write_report(
     import json
 
     json_path.write_text(
-        json.dumps(report_payload(project, audit), indent=1, ensure_ascii=False), encoding="utf-8"
+        json.dumps(report_payload(project, audit, rules), indent=1, ensure_ascii=False),
+        encoding="utf-8",
     )
     markdown_path.write_text(markdown, encoding="utf-8")
     return json_path, markdown_path

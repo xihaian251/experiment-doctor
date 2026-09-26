@@ -28,6 +28,13 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+from experiment_doctor.adapters.aggregation_claims import (
+    StatisticClaims,
+    collect_claims,
+    find_line,
+    read_lines,
+    readme_of,
+)
 from experiment_doctor.provenance import ProvenanceField, ProvenanceStatus, SourceRef
 from experiment_doctor.scanner import (
     AdapterSpec,
@@ -47,6 +54,7 @@ from experiment_doctor.schema import (
     MetricDirection,
     MetricRecord,
     RunStatus,
+    SelectionPolicy,
     SpreadBasis,
     TerminationCause,
 )
@@ -54,6 +62,8 @@ from experiment_doctor.schema import (
 #: The project's own aggregation script: family key, statistic and spread live there.
 AVERAGE_LOG = Path("scripts") / "average_log.py"
 ENVIRONMENT_FILE = Path("environment.yml")
+#: The line in the aggregation script that hands the logged best to the reported table.
+BEST_STAT_KEY = "'BestAcc': stat['bestAcc']"
 #: One config file per run, named by scripts/config_generator.py.
 CONFIG_DIR = Path("config")
 
@@ -208,6 +218,7 @@ class TorchSSLAdapter(ExperimentAdapter):
         self._logs_cache: dict[str, RunLog | None] = {}
         self._line_cache: dict[str, dict[str, int | None]] = {}
         self._runs_cache: list[ExperimentRun] | None = None
+        self._claims: StatisticClaims | None = None
         self._notes: list[str] = []
 
     # ------------------------------------------------------------------ layout
@@ -277,6 +288,37 @@ class TorchSSLAdapter(ExperimentAdapter):
             return None
         path = repo / AVERAGE_LOG
         return path if path.is_file() else None
+
+    def _statistics_claims(self) -> StatisticClaims:
+        """What this project's own script and README state about its reported statistics."""
+        if self._claims is not None:
+            return self._claims
+        script = self._average_log_path()
+        readme = readme_of(self.repo_root)
+        script_rel = relative(self.root, script) if script is not None else AVERAGE_LOG.as_posix()
+        readme_rel = relative(self.root, readme) if readme is not None else "README.md"
+        claims = collect_claims(
+            script=script,
+            script_rel=script_rel,
+            readme=readme,
+            readme_rel=readme_rel,
+        )
+        hit = find_line(read_lines(script), BEST_STAT_KEY) if script is not None else None
+        if hit is None:
+            claims.implemented_selection = ProvenanceField.unknown(
+                note=f"{script_rel} never states which logged statistic a run contributes"
+            )
+        else:
+            line, text = hit
+            claims.implemented_selection = ProvenanceField.of(
+                SelectionPolicy.BEST,
+                ProvenanceStatus.CONFIRMED,
+                self._src(script_rel, key=text, line=line),
+                note="the value one run contributes to the table is the log's BEST_EVAL_ACC "
+                "running maximum, not its final evaluation",
+            )
+        self._claims = claims
+        return claims
 
     def _model_src(self, alg: str, needle: str, key: str) -> SourceRef | None:
         """Cite the line in ``models/<alg>/<alg>.py`` that states a rule, or None."""
@@ -879,6 +921,10 @@ class TorchSSLAdapter(ExperimentAdapter):
         cell = reported.get((family.family_id, metric_name, variant))
         if cell is not None:
             self._attach_reported(record, cell)
+        if metric_name == METRIC_BEST:
+            # The @last record is this tool's counterfactual; only the published path has a
+            # statement behind it, so only that one carries the project's attestations.
+            self._statistics_claims().apply_to(record)
         return record
 
     def _reported_cells(self) -> dict[tuple[str, str, str], dict[str, Any]]:
