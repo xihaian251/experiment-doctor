@@ -1,0 +1,78 @@
+{
+  "note": "Transcription of the published Experiment 3 cells, NOT of any recomputation. Values were read off Table 8 of the paper PDF (arXiv:2209.11533v2, page 29 of the file) with a coordinate-based text extraction of the PlanarRobot and TALOS row blocks; the row/column assignment was verified by matching each cell's (x, y) against the method header column and the environment label. This file is an audit input only: experiment-doctor recomputes every number from run artifacts and compares them with these cells.",
+  "source": {
+    "table": "Table 8 'The full table for our main experiment', appendix",
+    "capture": "arXiv:2209.11533v2 PDF, sha256 d46a8e64e625c97fa71617b4498499975ff3084d41f47263f87b8dd22826184a",
+    "plus_minus_semantics": "3 sigma based on the standard error of the mean, i.e. 3 * std / sqrt(N)",
+    "environments": {
+      "Planar4_EVAL": {"row_label": "Planar Robot", "secondary_label": "MMD", "secondary_column": "MMD:"},
+      "TALOS_EVAL": {"row_label": "TALOS", "secondary_label": "H(q)", "secondary_column": "entropy"}
+    },
+    "method_to_group": {
+      "Samtrux": "samtrux",
+      "Samtrox": "samtrox",
+      "Samtron": "samtron",
+      "Samyrux": "samyrux",
+      "Samyrox": "samyrox",
+      "Samyron": "samyron",
+      "Sepyfux": "sepyfux",
+      "Sepyrux": "sepyrux",
+      "Zamtrux": "zamtrux"
+    }
+  },
+  "cells": [
+    {"family": "Planar4_EVAL/samtrux_planar_4", "metric": "-elbo", "variant": "included", "value": 11.47, "spread": 0.05, "decimals": 2, "source": "Table 8 PlanarRobot -ELBO / Samtrux"},
+    {"family": "Planar4_EVAL/samtrux_planar_4", "metric": "MMD:", "variant": "included", "value": 0.016, "spread": 0.0008, "value_tolerance": 0.0005, "spread_tolerance": 0.00005, "source": "Table 8 PlanarRobot MMD / Samtrux (1.6e-2 +/- 8e-4)"},
+
+    {"family": "Planar4_EVAL/samtrox_planar_4", "metric": "-elbo", "variant": "included", "value": 11.47, "spread": 0.04, "decimals": 2, "source": "Table 8 PlanarRobot -ELBO / Samtrox"},
+    {"family": "Planar4_EVAL/samtrox_planar_4", "metric": "MMD:", "variant": "included", "value": 0.016, "spread": 0.002, "value_tolerance": 0.0005, "spread_tolerance": 0.0005, "source": "Table 8 PlanarRobot MMD / Samtrox (1.6e-2 +/- 2e-3)"},
+
+    {"family": "Planar4_EVAL/samtron_planar_4", "metric": "-elbo", "variant": "included", "value": 11.47, "spread": 0.04, "decimals": 2, "source": "Table 8 PlanarRobot -ELBO / Samtron"},
+    {"family": "Planar4_EVAL/samtron_planar_4", "metric": "MMD:", "variant": "included", "value": 0.016, "spread": 0.001, "value_tolerance": 0.0005, "spread_tolerance": 0.0005, "source": "Table 8 PlanarRobot MMD / Samtron (1.6e-2 +/- 1e-3)"},
+
+    {"family": "Planar4_EVAL/samyrux_planar_4", "metric": "-elbo", "variant": "included", "value": 13.16, "spread": 0.20, "decimals": 2, "source": "Table 8 PlanarRobot -ELBO / Samyrux"},
+    {"family": "Planar4_EVAL/samyrux_planar_4", "metric": "MMD:", "variant": "included", "value": 0.037, "spread": 0.007, "value_tolerance": 0.0005, "spread_tolerance": 0.0005, "source": "Table 8 PlanarRobot MMD / Samyrux (3.7e-2 +/- 7e-3)"},
+
+    {"family": "Planar4_EVAL/samyrox_planar_4", "metric": "-elbo", "variant": "included", "value": 12.98, "spread": 0.09, "decimals": 2, "source": "Table 8 PlanarRobot -ELBO / Samyrox"},
+    {"family": "Planar4_EVAL/samyrox_planar_4", "metric": "MMD:", "variant": "included", "value": 0.026, "spread": 0.002, "value_tolerance": 0.0005, "spread_tolerance": 0.0005, "source": "Table 8 PlanarRobot MMD / Samyrox (2.6e-2 +/- 2e-3)"},
+
+    {"family": "Planar4_EVAL/samyron_planar_4", "metric": "-elbo", "variant": "included", "value": 12.93, "spread": 0.13, "decimals": 2, "source": "Table 8 PlanarRobot -ELBO / Samyron"},
+    {"family": "Planar4_EVAL/samyron_planar_4", "metric": "MMD:", "variant": "included", "value": 0.024, "spread": 0.002, "value_tolerance": 0.0005, "spread_tolerance": 0.0005, "source": "Table 8 PlanarRobot MMD / Samyron (2.4e-2 +/- 2e-3)"},
+
+    {"family": "Planar4_EVAL/sepyfux_planar_4", "metric": "-elbo", "variant": "included", "value": 17.26, "spread": 2.13, "decimals": 2, "source": "Table 8 PlanarRobot -ELBO / Sepyfux (excluded seeds removed)"},
+    {"family": "Planar4_EVAL/sepyfux_planar_4", "metric": "MMD:", "variant": "included", "value": 0.45, "spread": 0.06, "value_tolerance": 0.005, "spread_tolerance": 0.005, "source": "Table 8 PlanarRobot MMD / Sepyfux (4.5e-1 +/- 6e-2)"},
+
+    {"family": "Planar4_EVAL/sepyrux_planar_4", "metric": "-elbo", "variant": "included", "value": 16.35, "spread": 0.65, "decimals": 2, "source": "Table 8 PlanarRobot -ELBO / Sepyrux (excluded seeds removed)"},
+    {"family": "Planar4_EVAL/sepyrux_planar_4", "metric": "MMD:", "variant": "included", "value": 0.44, "spread": 0.07, "value_tolerance": 0.005, "spread_tolerance": 0.005, "source": "Table 8 PlanarRobot MMD / Sepyrux (4.4e-1 +/- 7e-2)"},
+
+    {"family": "Planar4_EVAL/zamtrux_planar_4", "metric": "-elbo", "variant": "included", "value": 11.48, "spread": 0.04, "decimals": 2, "source": "Table 8 PlanarRobot -ELBO / Zamtrux (two OOM seeds removed)"},
+    {"family": "Planar4_EVAL/zamtrux_planar_4", "metric": "MMD:", "variant": "included", "value": 0.016, "spread": 0.0009, "value_tolerance": 0.0005, "spread_tolerance": 0.00005, "source": "Table 8 PlanarRobot MMD / Zamtrux (1.6e-2 +/- 9e-4)"},
+
+    {"family": "TALOS_EVAL/samtrux_talos", "metric": "-elbo", "variant": "included", "value": -24.32, "spread": 0.22, "decimals": 2, "source": "Table 8 TALOS -ELBO / Samtrux"},
+    {"family": "TALOS_EVAL/samtrux_talos", "metric": "entropy", "variant": "included", "value": -16.81, "spread": 0.07, "decimals": 2, "source": "Table 8 TALOS H(q) / Samtrux"},
+
+    {"family": "TALOS_EVAL/samtrox_talos", "metric": "-elbo", "variant": "included", "value": -24.30, "spread": 0.10, "decimals": 2, "source": "Table 8 TALOS -ELBO / Samtrox"},
+    {"family": "TALOS_EVAL/samtrox_talos", "metric": "entropy", "variant": "included", "value": -16.88, "spread": 0.09, "decimals": 2, "source": "Table 8 TALOS H(q) / Samtrox"},
+
+    {"family": "TALOS_EVAL/samtron_talos", "metric": "-elbo", "variant": "included", "value": -24.43, "spread": 0.16, "decimals": 2, "source": "Table 8 TALOS -ELBO / Samtron"},
+    {"family": "TALOS_EVAL/samtron_talos", "metric": "entropy", "variant": "included", "value": -16.82, "spread": 0.07, "decimals": 2, "source": "Table 8 TALOS H(q) / Samtron"},
+
+    {"family": "TALOS_EVAL/samyrux_talos", "metric": "-elbo", "variant": "included", "value": -24.13, "spread": 0.14, "decimals": 2, "source": "Table 8 TALOS -ELBO / Samyrux"},
+    {"family": "TALOS_EVAL/samyrux_talos", "metric": "entropy", "variant": "included", "value": -17.26, "spread": 0.10, "decimals": 2, "source": "Table 8 TALOS H(q) / Samyrux"},
+
+    {"family": "TALOS_EVAL/samyrox_talos", "metric": "-elbo", "variant": "included", "value": -23.91, "spread": 0.13, "decimals": 2, "source": "Table 8 TALOS -ELBO / Samyrox"},
+    {"family": "TALOS_EVAL/samyrox_talos", "metric": "entropy", "variant": "included", "value": -17.32, "spread": 0.16, "decimals": 2, "source": "Table 8 TALOS H(q) / Samyrox"},
+
+    {"family": "TALOS_EVAL/samyron_talos", "metric": "-elbo", "variant": "included", "value": -24.00, "spread": 0.23, "decimals": 2, "source": "Table 8 TALOS -ELBO / Samyron"},
+    {"family": "TALOS_EVAL/samyron_talos", "metric": "entropy", "variant": "included", "value": -17.25, "spread": 0.16, "decimals": 2, "source": "Table 8 TALOS H(q) / Samyron"},
+
+    {"family": "TALOS_EVAL/sepyfux_talos", "metric": "-elbo", "variant": "included", "value": -16.64, "spread": 5.26, "decimals": 2, "source": "Table 8 TALOS -ELBO / Sepyfux (excluded seeds removed)"},
+    {"family": "TALOS_EVAL/sepyfux_talos", "metric": "entropy", "variant": "included", "value": -25.03, "spread": 5.46, "decimals": 2, "source": "Table 8 TALOS H(q) / Sepyfux"},
+
+    {"family": "TALOS_EVAL/sepyrux_talos", "metric": "-elbo", "variant": "included", "value": -19.00, "spread": 1.07, "decimals": 2, "source": "Table 8 TALOS -ELBO / Sepyrux (excluded seeds removed)"},
+    {"family": "TALOS_EVAL/sepyrux_talos", "metric": "entropy", "variant": "included", "value": -22.34, "spread": 1.11, "decimals": 2, "source": "Table 8 TALOS H(q) / Sepyrux"},
+
+    {"family": "TALOS_EVAL/zamtrux_talos", "metric": "-elbo", "variant": "included", "value": -23.69, "spread": 0.16, "decimals": 2, "source": "Table 8 TALOS -ELBO / Zamtrux"},
+    {"family": "TALOS_EVAL/zamtrux_talos", "metric": "entropy", "variant": "included", "value": -16.91, "spread": 0.07, "decimals": 2, "source": "Table 8 TALOS H(q) / Zamtrux"}
+  ]
+}

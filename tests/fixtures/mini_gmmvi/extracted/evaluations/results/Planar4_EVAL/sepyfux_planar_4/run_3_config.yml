@@ -1,0 +1,9 @@
+algorithm_id:
+  desc: null
+  value: SEPYFUX
+iterations:
+  desc: null
+  value: 1000000
+repetitions:
+  desc: null
+  value: 3

@@ -1,0 +1,13 @@
+---
+name: "DEFAULT"
+iterations: 100000
+repetitions: 1
+algorithm_id: "SAMTRUX"
+wandb:
+    project: gmmvi-eval
+
+---
+name: "samtrux_planar_4"
+experiment_id: "planar_robot"
+wandb:
+    group: "samtrux_planar_4"

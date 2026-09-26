@@ -1,0 +1,13 @@
+---
+name: "DEFAULT"
+iterations: 1000000
+repetitions: 3
+algorithm_id: "SEPYFUX"
+wandb:
+    project: gmmvi-eval
+
+---
+name: "sepyfux_planar_4"
+experiment_id: "planar_robot"
+wandb:
+    group: "sepyfux_planar_4"

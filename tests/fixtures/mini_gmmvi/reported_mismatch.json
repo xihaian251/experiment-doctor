@@ -1,0 +1,39 @@
+{
+ "cells": [
+  {
+   "family": "Planar4_EVAL/samtrux_planar_4",
+   "metric": "-elbo",
+   "value": 11.0,
+   "spread": 1.41,
+   "decimals": 2
+  },
+  {
+   "family": "Planar4_EVAL/samtrux_planar_4",
+   "metric": "MMD:",
+   "value": 0.02,
+   "spread": 0.0141,
+   "decimals": 4
+  },
+  {
+   "family": "Planar4_EVAL/sepyfux_planar_4",
+   "metric": "-elbo",
+   "value": 5.0,
+   "spread": 1.06,
+   "decimals": 2
+  },
+  {
+   "family": "GMM20_EVAL/samtrux_gmm20",
+   "metric": "-elbo",
+   "value": 6.0,
+   "spread": 2.12,
+   "decimals": 2
+  },
+  {
+   "family": "GMM20_EVAL/samtrux_gmm20",
+   "metric": "num_detected_modes",
+   "value": 9.0,
+   "spread": 2.12,
+   "decimals": 2
+  }
+ ]
+}
