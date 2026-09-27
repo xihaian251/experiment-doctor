@@ -5,6 +5,7 @@
 - 前提：Phase 1–5 全部完成（`PHASE1..PHASE5_*_REPORT.md`），HEAD 与工作树状态见 §0
 - 状态更新（RC Resolution，同日）：本文件为 **RC1 时点快照**，正文事实与数字未改写。其中 B2（文档在仓库外）已通过把 `../docs/v1_design/` 迁入库内 `docs/v1/` 解决、B4（README/CHANGELOG 不描述 v1）已按 D4 补写、B3 版本号**未**改动仍待决策；逐项处置见 `V1_RELEASE_CANDIDATE_RC2_REPORT.md` §1。
 - 状态更新（RC Final，同日）：§1 的三条 TODO（版本号 0.1.0 / 语义化判定 / `description` 文案）中，**版本决策已定为 `1.0.0` 并落地**（`__init__.py:__version__` + `test_packaging.py:RELEASE_VERSION`，commit `717e3cf`），本文件 §1 表内的 `"0.1.0"` 字样为快照原文不再更新；`description` 文案经人工确认本轮不动（报告 §6 L9）。发布就绪判断与待授权动作见 `V1_RELEASE_FINAL_REPORT.md` §7。
+- 状态更新（Public Release Execution，同日）：**v1.0.0 已正式发布** —— release commit `fb3a242`、annotated tag `v1.0.0`、GitHub Release 与 PyPI 双上线（Trusted Publishing，无 token/twine）。本文件 §3 的 CLI 文案 TODO、§5 的路径剥离 TODO 仍未处理，属发布后的非阻塞项。全过程见 `V1_RELEASE_REPORT.md`。
 - 本清单只做**事实登记 + DONE/TODO 标记**。本轮未修改任何代码、未 commit、未 push、未 tag、未发布。
 
 标记含义：**DONE** = 已验证为真；**TODO** = 需要人工决策或发布动作，本轮不代为执行。

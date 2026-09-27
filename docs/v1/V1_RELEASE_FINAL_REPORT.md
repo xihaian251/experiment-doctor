@@ -5,6 +5,7 @@
 - 上一份：`docs/v1/V1_RELEASE_CANDIDATE_RC2_REPORT.md`（RC2）；台账：`docs/v1/V1_RELEASE_CHECKLIST.md`
 - 本轮结束状态：**版本号已落地为 `1.0.0`（commit `717e3cf`）；工作树 clean；未 push、未 tag、未发布**。本文件随后作为一笔 `docs:` commit 入库（其 sha 由 `git log -1` 读取，本文件不预测自身身份）
 - 记法：`<repo>` = 本仓库 git toplevel；`<parent>/` = 仓库根的同级目录；`<本机用户名>` = 本机账户名
+- 状态更新（Public Release Execution，同日）：本文件的 §7 待授权动作**已全部执行完毕**，release commit 为 `fb3a242`（在 `772501c` 之后多一笔 workflow 字面量改动），tag `v1.0.0`、GitHub Release、PyPI 均已上线。本文件保持发布前判断原文，后续事实以 `V1_RELEASE_REPORT.md` 为准。
 
 ---
 
