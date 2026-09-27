@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from experiment_doctor.adapters import crda, generic, gmmvi, torchssl
+from experiment_doctor.adapters import captured, crda, generic, gmmvi, torchssl
 from experiment_doctor.scanner import AdapterSpec, ExperimentAdapter, registry, select_adapter
 
 
@@ -16,6 +16,7 @@ def install_adapters() -> None:
     gmmvi.install()
     torchssl.install()
     crda.install()
+    captured.install()
 
 
 def available_adapters() -> list[AdapterSpec]:

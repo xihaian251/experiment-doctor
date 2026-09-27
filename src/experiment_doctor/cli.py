@@ -1,8 +1,10 @@
-"""Typer CLI: ``experiment-doctor --help | scan | audit | rules | adapters``.
+"""Typer CLI: ``experiment-doctor ... | init | run | verify`` (v0.1: scan/audit/rules/adapters).
 
-v0.1 ships exactly these four commands.  ``rules`` only reads the registry.
-There is no serve/watch/fix/sync/upload: the tool is read-only and does not
-mutate a project.
+v0.1 ships exactly the four audit commands.  ``rules`` only reads the registry.
+There is no serve/watch/fix/sync/upload: the audit path does not mutate a
+project.  ``init``, ``run`` and ``verify`` are the additive v1.0 commands (init/run
+write only their own evidence files; ``run`` executes the user's command;
+``verify`` is read-only except for its own verify.json/verify.md outputs).
 """
 
 from __future__ import annotations
@@ -18,6 +20,9 @@ from experiment_doctor.audit import audit_project
 from experiment_doctor.report import render_markdown, scan_summary, write_report
 from experiment_doctor.rules import RULES, rule_catalog, run_rules
 from experiment_doctor.scanner import ExperimentAdapter, scan_project
+from experiment_doctor.v1.cli import init as v1_init
+from experiment_doctor.v1.cli import run as v1_run
+from experiment_doctor.v1.cli import verify as v1_verify
 
 app = typer.Typer(
     add_completion=False,
@@ -122,6 +127,13 @@ def adapters() -> None:
         typer.echo(f"{spec.name}\n  {spec.description}")
         if spec.options:
             typer.echo(f"  options: {', '.join(spec.options)}")
+
+
+# v1.0 (additive): runtime capture.  Registered from the v1 subpackage so the
+# v0.1 command implementations above stay byte-for-byte auditable.
+app.command(name="init")(v1_init)
+app.command(name="run")(v1_run)
+app.command(name="verify")(v1_verify)
 
 
 def main() -> None:
