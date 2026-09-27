@@ -13,7 +13,7 @@ from typing import Any
 import pytest
 
 from experiment_doctor.audit import AuditResult, audit_project
-from experiment_doctor.provenance import ProvenanceField, SourceRef
+from experiment_doctor.provenance import ProvenanceField, ProvenanceStatus, SourceRef
 from experiment_doctor.rules import (
     RULES,
     Rule,
@@ -35,12 +35,19 @@ from experiment_doctor.rules.spread_semantics import SpreadSemanticsConsistency
 from experiment_doctor.rules.termination import TerminationProvenance
 from experiment_doctor.schema import (
     AggregationRecord,
+    ArtifactRef,
+    ArtifactRole,
     ArtifactType,
     ComparisonStatus,
+    DeclaredEnvironment,
+    DeclaredEnvironmentType,
+    EnvironmentRelationship,
     ExperimentProject,
     ExperimentRun,
     FamilyKind,
+    RunEnvironmentBinding,
     RunStatus,
+    RuntimeEnvironment,
     SelectionPolicy,
     Severity,
     SpreadBasis,
@@ -779,11 +786,192 @@ def test_firewall_a_repository_environment_file_never_passes_runtime_provenance(
     assert "only established from a declaration outside the run" in result.summary
 
 
-def test_ed010_inconclusive_when_the_run_recorded_nothing() -> None:
-    project = project_with(family_runs(1), make_family())
+def test_ed010_inconclusive_when_only_a_declaration_exists() -> None:
+    """Case A: an ``environment.yml`` in the repository establishes intent, not execution."""
+    project = project_with(
+        family_runs(1),
+        make_family(),
+        artifacts=[artifact("environment.yml", ArtifactType.ENVIRONMENT)],
+    )
     result = one(RuntimeEnvironmentProvenance(), project)
     assert result.status is RuleStatus.INCONCLUSIVE
-    assert "no dependency declaration was found" in " ".join(result.evidence)
+    assert result.measurements["declared_environment_files"] == 1
+    assert (
+        result.measurements["environment_relationship"]
+        == EnvironmentRelationship.ONLY_DECLARED.value
+    )
+    assert result.measurements["runtime_evidence_recorded"] is False
+
+
+def test_ed010_passes_when_runtime_record_matches_the_declaration() -> None:
+    """Case B: a run-local record and the declaration agree on a shared pin."""
+    run = make_run(
+        "F/f/run_0",
+        runtime_environment=RuntimeEnvironment(
+            framework_versions=attested({"torch": "2.0"}, "F/f/run_0/log.txt", 3),
+            source_artifacts=[SourceRef(path="F/f/run_0/log.txt", line=3)],
+        ),
+        artifacts=[artifact("F/f/run_0/log.txt")],
+    )
+    project = project_with([run], make_family())
+    project.declared_environments.append(
+        DeclaredEnvironment(
+            artifact_id="conda-pin",
+            artifact_type=DeclaredEnvironmentType.ENVIRONMENT_YAML,
+            source_path="environment.yml",
+            declared_dependencies=attested({"torch": "2.0"}, "environment.yml"),
+        )
+    )
+    result = one(RuntimeEnvironmentProvenance(), project)
+    assert result.status is RuleStatus.PASS
+    assert result.measurements["environment_relationship"] == EnvironmentRelationship.MATCHED.value
+
+
+def test_ed010_fails_when_runtime_record_contradicts_the_declaration() -> None:
+    """Case C: the log says torch 2.0, the declaration pins 1.7 — a checked contradiction."""
+    run = make_run(
+        "F/f/run_0",
+        runtime_environment=RuntimeEnvironment(
+            framework_versions=attested({"torch": "2.0"}, "F/f/run_0/log.txt", 3),
+        ),
+        artifacts=[artifact("F/f/run_0/log.txt")],
+    )
+    project = project_with([run], make_family())
+    project.declared_environments.append(
+        DeclaredEnvironment(
+            artifact_id="conda-pin",
+            artifact_type=DeclaredEnvironmentType.ENVIRONMENT_YAML,
+            source_path="environment.yml",
+            declared_dependencies=attested({"torch": "1.7"}, "environment.yml"),
+        )
+    )
+    result = one(RuntimeEnvironmentProvenance(), project)
+    assert result.status is RuleStatus.FAIL
+    assert (
+        result.measurements["environment_relationship"] == EnvironmentRelationship.CONFLICTING.value
+    )
+    assert "torch" in result.summary
+
+
+def test_ed010_not_applicable_when_no_environment_evidence_exists() -> None:
+    """Case D: nothing records an environment and no declaration exists to check."""
+    project = project_with(family_runs(1), make_family())
+    result = one(RuntimeEnvironmentProvenance(), project)
+    assert result.status is RuleStatus.NOT_APPLICABLE
+    assert result.severity is Severity.INFO
+    assert result.measurements["environment_relationship"] == EnvironmentRelationship.UNKNOWN.value
+
+
+def test_firewall_requirements_pins_never_confirm_executed_dependencies() -> None:
+    run = make_run(
+        "F/f/run_0",
+        runtime_environment=RuntimeEnvironment(
+            framework_versions=attested(
+                {"torch": "1.12"}, "requirements.txt", status=ProvenanceStatus.SUPPORTED
+            ),
+            source_artifacts=[SourceRef(path="requirements.txt")],
+        ),
+        artifacts=[artifact("F/f/run_0/log.txt")],
+    )
+    project = project_with(
+        [run], make_family(), artifacts=[artifact("requirements.txt", ArtifactType.ENVIRONMENT)]
+    )
+    result = one(RuntimeEnvironmentProvenance(), project)
+    assert result.status is RuleStatus.INCONCLUSIVE
+    assert result.measurements["runtime_evidence_recorded"] is False
+
+
+def test_firewall_slurm_template_never_proves_actual_hardware() -> None:
+    run = make_run(
+        "F/f/run_0",
+        runtime_environment=RuntimeEnvironment(
+            hardware=attested("4x A100", "templates/submit.slurm"),
+            source_artifacts=[SourceRef(path="templates/submit.slurm")],
+        ),
+        artifacts=[artifact("F/f/run_0/log.txt")],
+    )
+    project = project_with(
+        [run],
+        make_family(),
+        artifacts=[artifact("templates/submit.slurm", ArtifactType.ENVIRONMENT)],
+    )
+    result = one(RuntimeEnvironmentProvenance(), project)
+    assert result.status is RuleStatus.INCONCLUSIVE
+    assert (
+        result.measurements["environment_relationship"]
+        == EnvironmentRelationship.ONLY_DECLARED.value
+    )
+
+
+def test_firewall_dockerfile_never_proves_the_container_that_ran() -> None:
+    run = make_run(
+        "F/f/run_0",
+        runtime_environment=RuntimeEnvironment(
+            os=attested("debian 11", "Dockerfile"),
+            python_version=attested("3.9", "Dockerfile"),
+            source_artifacts=[SourceRef(path="Dockerfile")],
+        ),
+        artifacts=[artifact("F/f/run_0/log.txt")],
+    )
+    project = project_with(
+        [run], make_family(), artifacts=[artifact("Dockerfile", ArtifactType.ENVIRONMENT)]
+    )
+    result = one(RuntimeEnvironmentProvenance(), project)
+    assert result.status is RuleStatus.INCONCLUSIVE
+
+
+def test_firewall_matched_is_never_inferred_from_disjoint_or_missing_versions() -> None:
+    slot = RuntimeEnvironment(framework_versions=attested({"torch": "2.0"}, "F/f/run_0/log.txt"))
+    disjoint = DeclaredEnvironment(
+        artifact_id="pin",
+        artifact_type=DeclaredEnvironmentType.REQUIREMENTS,
+        source_path="requirements.txt",
+        declared_dependencies=attested({"python": "3.7"}, "requirements.txt"),
+    )
+    unpinned = DeclaredEnvironment(
+        artifact_id="tpl",
+        artifact_type=DeclaredEnvironmentType.SLURM_TEMPLATE,
+        source_path="submit.slurm",
+    )
+    assert (
+        RunEnvironmentBinding.build("F/f/run_0", slot, disjoint).relationship_status
+        is EnvironmentRelationship.UNKNOWN
+    )
+    assert (
+        RunEnvironmentBinding.build("F/f/run_0", slot, unpinned).relationship_status
+        is EnvironmentRelationship.UNKNOWN
+    )
+    assert (
+        RunEnvironmentBinding.build("F/f/run_0", slot, None).relationship_status
+        is EnvironmentRelationship.ONLY_RUNTIME
+    )
+
+
+def test_environment_schema_additions_keep_old_json_readable() -> None:
+    """Every refinement field is optional: a pre-refinement scan record still validates."""
+    run_payload = make_run("F/f/run_0").model_dump(mode="json")
+    del run_payload["runtime_environment"]
+    assert ExperimentRun.model_validate(run_payload).runtime_environment is None
+    artifact_payload = ArtifactRef(path="x.log").model_dump(mode="json")
+    del artifact_payload["artifact_role"]
+    assert ArtifactRef.model_validate(artifact_payload).artifact_role is None
+    project_payload = ExperimentProject(root="u", project_id="u", adapter="u").model_dump(
+        mode="json"
+    )
+    del project_payload["declared_environments"]
+    assert ExperimentProject.model_validate(project_payload).declared_environments == []
+
+
+def test_environment_artifact_role_counts_as_a_declaration() -> None:
+    role_artifact = ArtifactRef(
+        path="locks/pip.lock",
+        artifact_type=ArtifactType.SUMMARY,
+        artifact_role=ArtifactRole.DECLARED_ENVIRONMENT,
+    )
+    project = project_with(family_runs(1), make_family(), artifacts=[role_artifact])
+    result = one(RuntimeEnvironmentProvenance(), project)
+    assert result.status is RuleStatus.INCONCLUSIVE
+    assert result.measurements["declared_environment_files"] == 1
 
 
 def test_ed010_fails_on_two_mutually_exclusive_environment_records() -> None:
