@@ -14,6 +14,7 @@ separate objects and must never be collapsed.
 from __future__ import annotations
 
 from enum import Enum
+from typing import Any
 
 from pydantic import BaseModel, Field, model_validator
 
@@ -162,11 +163,44 @@ class Severity(str, Enum):
     HIGH = "HIGH"
 
 
+class ArtifactRole(str, Enum):
+    """What an artifact is *for*, declared rather than guessed (P1-b).
+
+    ``artifact_type`` says what a file is; the role says what provenance question
+    it answers.  ``DECLARED_ENVIRONMENT`` is deliberately separated from every
+    runtime role so a dependency file can never be cited as something the run
+    executed with.  Closed enum: free strings are rejected by validation.
+    """
+
+    SOURCE_CODE = "SOURCE_CODE"
+    CONFIG = "CONFIG"
+    LOG = "LOG"
+    CHECKPOINT = "CHECKPOINT"
+    DATASET = "DATASET"
+    DECLARED_ENVIRONMENT = "DECLARED_ENVIRONMENT"
+    RESULT = "RESULT"
+    REPORT = "REPORT"
+
+
+class DeclaredEnvironmentType(str, Enum):
+    """Which dialect a repository-level dependency declaration uses."""
+
+    REQUIREMENTS = "requirements"
+    ENVIRONMENT_YAML = "environment_yaml"
+    CONDA_YAML = "conda_yaml"
+    DOCKERFILE = "dockerfile"
+    SLURM_TEMPLATE = "slurm_template"
+    UNKNOWN = "unknown"
+
+
 class ArtifactRef(BaseModel):
     """Provenance-relevant artifact metadata only; no hashing of large files."""
 
     path: str
     artifact_type: ArtifactType = ArtifactType.UNKNOWN
+    #: None means no component has classified this artifact's role yet, which is
+    #: what every pre-refinement scan record means.
+    artifact_role: ArtifactRole | None = None
     size: int | None = None
     mtime: float | None = None
     sha256: str | None = None
@@ -174,6 +208,142 @@ class ArtifactRef(BaseModel):
     @property
     def is_hashed(self) -> bool:
         return self.sha256 is not None
+
+
+class RuntimeEnvironment(BaseModel):
+    """What the run's own artifacts recorded about the software and machine it executed on.
+
+    This is the runtime side of the P1-a split: the legacy ``environment`` scalar
+    could not express "a declaration exists but the runtime is unknown", so the
+    two concepts now have separate types.  Every aspect carries its own evidence
+    grade, and no value may be copied in here from a repository declaration —
+    declared intent belongs to :class:`DeclaredEnvironment` and is never upgraded.
+    """
+
+    python_version: ProvenanceField[str] = Field(default_factory=unknown_field)
+    framework_versions: ProvenanceField[dict[str, str]] = Field(default_factory=unknown_field)
+    cuda_version: ProvenanceField[str] = Field(default_factory=unknown_field)
+    hardware: ProvenanceField[str] = Field(default_factory=unknown_field)
+    os: ProvenanceField[str] = Field(default_factory=unknown_field)
+    source_artifacts: list[SourceRef] = Field(default_factory=list)
+
+    def evidenced_fields(self) -> dict[str, ProvenanceField[Any]]:
+        """The aspects some artifact actually states, keyed by field name."""
+        aspects: dict[str, ProvenanceField[Any]] = {}
+        for name in ("python_version", "framework_versions", "cuda_version", "hardware", "os"):
+            field: ProvenanceField[Any] = getattr(self, name)
+            if field.status in (ProvenanceStatus.CONFIRMED, ProvenanceStatus.SUPPORTED):
+                aspects[name] = field
+        return aspects
+
+    def is_evidenced(self) -> bool:
+        return bool(self.evidenced_fields())
+
+    def version_map(self) -> dict[str, str]:
+        """Flat lower-cased package-to-version view for the declared-vs-runtime comparison.
+
+        Only version-bearing aspects enter: hardware and OS names are not pins a
+        dependency file could contradict, so they must not manufacture a conflict.
+        """
+        versions: dict[str, str] = {}
+        for name, field in self.evidenced_fields().items():
+            if name == "framework_versions" and isinstance(field.value, dict):
+                versions.update(
+                    {
+                        str(key).strip().lower(): str(value).strip().lower()
+                        for key, value in field.value.items()
+                    }
+                )
+            elif name == "python_version" and field.value is not None:
+                versions["python"] = str(field.value).strip().lower()
+            elif name == "cuda_version" and field.value is not None:
+                versions["cuda"] = str(field.value).strip().lower()
+        return versions
+
+
+class DeclaredEnvironment(BaseModel):
+    """One repository artifact stating the dependencies its author intended.
+
+    A declaration is evidence about a file, never about an execution: nothing in
+    here may be promoted into a :class:`RuntimeEnvironment`, which is why ED010
+    can report "declared exists / runtime unknown" without contradiction.
+    """
+
+    artifact_id: str
+    artifact_type: DeclaredEnvironmentType = DeclaredEnvironmentType.UNKNOWN
+    source_path: str
+    declared_dependencies: ProvenanceField[dict[str, str]] = Field(default_factory=unknown_field)
+    provenance: ProvenanceStatus = ProvenanceStatus.SUPPORTED
+
+    def version_map(self) -> dict[str, str]:
+        """The pins this declaration states, or an empty map when it names none."""
+        if self.declared_dependencies.status not in (
+            ProvenanceStatus.CONFIRMED,
+            ProvenanceStatus.SUPPORTED,
+        ):
+            return {}
+        value = self.declared_dependencies.value or {}
+        return {str(key).strip().lower(): str(item).strip().lower() for key, item in value.items()}
+
+
+class EnvironmentRelationship(str, Enum):
+    """How one run's runtime record and the repository's declaration stand together."""
+
+    MATCHED = "MATCHED"
+    CONFLICTING = "CONFLICTING"
+    ONLY_DECLARED = "ONLY_DECLARED"
+    ONLY_RUNTIME = "ONLY_RUNTIME"
+    UNKNOWN = "UNKNOWN"
+
+
+class RunEnvironmentBinding(BaseModel):
+    """The light relation between one run and the environment evidence around it.
+
+    Built from evidence, never from assumption: ``MATCHED`` appears only when
+    both sides state a version for the same package and those versions agree;
+    disjoint facts stay ``UNKNOWN`` rather than being read as agreement.
+    """
+
+    run_id: str
+    runtime_environment: RuntimeEnvironment | None = None
+    declared_environment: DeclaredEnvironment | None = None
+    relationship_status: EnvironmentRelationship = EnvironmentRelationship.UNKNOWN
+
+    @classmethod
+    def build(
+        cls,
+        run_id: str,
+        runtime_environment: RuntimeEnvironment | None,
+        declared_environment: DeclaredEnvironment | None,
+    ) -> RunEnvironmentBinding:
+        return cls(
+            run_id=run_id,
+            runtime_environment=runtime_environment,
+            declared_environment=declared_environment,
+            relationship_status=relate_environment_evidence(
+                runtime_environment, declared_environment
+            ),
+        )
+
+
+def relate_environment_evidence(
+    runtime: RuntimeEnvironment | None,
+    declared: DeclaredEnvironment | None,
+) -> EnvironmentRelationship:
+    if runtime is None and declared is None:
+        return EnvironmentRelationship.UNKNOWN
+    if runtime is None:
+        return EnvironmentRelationship.ONLY_DECLARED
+    if declared is None:
+        return EnvironmentRelationship.ONLY_RUNTIME
+    runtime_versions = runtime.version_map()
+    declared_versions = declared.version_map()
+    shared = sorted(runtime_versions.keys() & declared_versions.keys())
+    if not shared:
+        return EnvironmentRelationship.UNKNOWN
+    if any(runtime_versions[name] != declared_versions[name] for name in shared):
+        return EnvironmentRelationship.CONFLICTING
+    return EnvironmentRelationship.MATCHED
 
 
 class MetricRecord(BaseModel):
@@ -292,6 +462,10 @@ class ExperimentRun(BaseModel):
     environment: ProvenanceField[str] = Field(
         default_factory=lambda: ProvenanceField(value=None, status=ProvenanceStatus.UNKNOWN)
     )
+    #: The structured runtime-software slot (P1-a).  The legacy ``environment``
+    #: scalar stays exactly as it was — a project may keep using it for the task
+    #: environment — and this slot is where a run-local software record belongs.
+    runtime_environment: RuntimeEnvironment | None = None
     compute_budget: ProvenanceField[str] = Field(
         default_factory=lambda: ProvenanceField(value=None, status=ProvenanceStatus.UNKNOWN)
     )
@@ -436,6 +610,10 @@ class ExperimentProject(BaseModel):
     runs: list[ExperimentRun] = Field(default_factory=list)
     aggregations: list[AggregationRecord] = Field(default_factory=list)
     artifacts: list[ArtifactRef] = Field(default_factory=list)
+    #: Repository-level dependency declarations registered as provenance (P1-b).
+    #: Empty for every pre-refinement scan; declarations still count from the
+    #: artifact inventory, so registering them here only adds detail, never status.
+    declared_environments: list[DeclaredEnvironment] = Field(default_factory=list)
     notes: list[str] = Field(default_factory=list)
 
     def family(self, family_id: str) -> ExperimentFamily | None:
