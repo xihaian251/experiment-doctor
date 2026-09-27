@@ -98,6 +98,8 @@ CHANGELOG：顶部新增 `## Unreleased — v1 capture pipeline (release candida
 
 **发行载荷扫描（分类为 B 的判据）**：本轮本地构建 `experiment_doctor-0.1.0-py3-none-any.whl` 与 `experiment_doctor-0.1.0.tar.gz`，逐成员做字节级匹配（`MLResearch` / `C:\Users` / 本机用户名）：
 
+> 术语澄清：本表把**扫描模式本身**写成了字面量，所以对 `docs/v1/` 复扫时，本文件会命中 4 处「模式声明」文本。这不构成路径泄漏——文中没有出现任何完整的本机绝对路径；表 #5 所说「迁移后命中 0」专指完整的 `<盘符>:\<父目录>\...` 路径字符串与用户名，那两项在迁入的 9 份文档中确为 0。
+
 - wheel：48 条目 / 42 个 .py → 命中 **0**；不含 `docs/`、`scripts/`、`tests/`。
 - sdist：78 条目，顶层只有 `LICENSE PKG-INFO README.md pyproject.toml setup.cfg src/ tests/` → 命中 **0**；`docs/` 与 `scripts/` **不在 sdist 内**（无 MANIFEST.in），`tests/` 在内但只含 synthetic fixture。
 - 结论：1–4 号项属 **仅历史/仅仓库**，**不阻断发布**；若要连仓库可见性一并清干净，需改写已发布的 v0.1 历史文件（= 事实销毁），故留给人工决策（§6 D3）。构建产生的 `build/`、`src/experiment_doctor.egg-info/` 已删除，工作树回到 clean（否则 `tests/test_packaging.py:48` 的 skip 会静默变 pass）。
