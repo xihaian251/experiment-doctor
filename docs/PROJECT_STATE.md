@@ -1,8 +1,13 @@
 # Project State
 
-- Current release candidate: **0.1.0** (version source:
-  `src/experiment_doctor/__init__.py:__version__`, consumed dynamically by
-  `pyproject.toml`).
+- Status: **published 0.1.0** (2026-09-27).
+  - Release commit / tag: `v0.1.0` -> `7c9e5506efecb7f0b96b038bd431783329d0c895`
+  - GitHub: <https://github.com/xihaian251/experiment-doctor> (public),
+    Release <https://github.com/xihaian251/experiment-doctor/releases/tag/v0.1.0>
+  - PyPI: <https://pypi.org/project/experiment-doctor/0.1.0/>
+    (wheel + sdist, not yanked, uploaded via GitHub Actions Trusted Publishing)
+- Version source: `src/experiment_doctor/__init__.py:__version__`, consumed
+  dynamically by `pyproject.toml`.
 - Architecture: validated (frozen this round; no schema/rule/adapter-core
   changes during hardening).
 - Real-world projects validated: **3** (GMMVI, TorchSSL, CRDA).
@@ -23,3 +28,6 @@
   - `SourceRef.describe()` renders `<no source>` when only a `note` is set
     (CRDA-OBS-3, P3, cosmetic).
   - Read-only by design: no re-execution, no verdict, no composite score.
+  - The 0.1.0 PyPI upload used Trusted Publishing (OIDC) but carries no SLSA
+    provenance attestation (the publish workflow does not request
+    `attestations: write`).
