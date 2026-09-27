@@ -119,6 +119,7 @@ src/experiment_doctor/
 | A11 | 仓库内 **5 个文件带真实本机绝对路径**：`EXPERIMENT_DOCTOR_V0_1_MVP_REPORT.md:3-4`、`EXPERIMENT_DOCTOR_V0_1_RULESET_REPORT.md:11`、`docs/PROJECT_STATE.md:15`（`F:\MLResearch\...`）+ `rule_acceptance.json`、`scripts/run_rule_acceptance.py:7-11`（`F:/MLResearch/...`）。另有 2 处是历史报告**在句子里引用扫描模式串**（RC2 `:88,100`、FINAL `:129`），2 处是合成串（`PHASE3_VERIFY_REPORT.md`、`tests/test_v1_verify.py`） | 前 5 处属已发布历史事实证据，任务书明令不得改写；其余不是泄露 |
 | A12 | **`test_packaging.py:48` 会因构建残留而假 pass**：源树里若留 `build/` 或 `src/experiment_doctor.egg-info/`，该 skip 静默变 pass，出现假象 `213 passed` | 规程：每次构建后删净，并用 `-rs` 复核 skip 仍在 |
 | A13 | **安全扫描不得用 `grep`**：以反斜杠收尾的模式（`grep 'C:\\'`）会报 `grep: Trailing backslash` 并**静默返回空**，等于假通过；drive-letter 正则还会把 `wandb:` 里的 `b:` 吃成路径（`scripts/make_mini_fixture.py:144` 即本轮实测误报） | 规程：用 Python 字节级正则 + 允许 1/2 个分隔符 + 排除 `scheme://` + 人工复核每条命中 |
+| A14 | **文档哈希随 EOL 变**：本机 `core.autocrlf=true`，`docs/v1/` 里 3 份早期报告（`V1_RELEASE_REPORT.md`、`V1_RELEASE_CANDIDATE_REPORT.md`、`V1_RELEASE_CHECKLIST.md`）工作树是 CRLF 而 git blob 是 LF，两者 sha256 **不同**（例：`96bded16…` vs `cfc7b266…`）。本轮新增文档工作树与 blob 一致，但换台 Windows 机器检出后同样会漂移 | 规程：文档一律以 **git blob** 为哈希口径（`git cat-file blob HEAD:<path> \| sha256sum`），发行物是二进制不受影响。`release/v1.0.0/VALIDATION_REPORTS_INDEX.md` §2/§4 已按该口径记录并给出命令 |
 
 ## §6 Future development boundary
 
