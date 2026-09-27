@@ -1,5 +1,30 @@
 # Changelog
 
+## Unreleased — v1 capture pipeline (release candidate, not published)
+
+Additive: the v0.1 audit path, its rules, schema and acceptance adapters are
+byte-for-byte unchanged, and its four commands behave as before.
+
+- `experiment-doctor init` writes `experiment.lock.json`: code revision and
+  working-tree state, interpreter / installed packages / platform, fingerprints
+  of declared config and dataset paths, and explicitly declared seed and command.
+- `experiment-doctor run -- COMMAND` wraps a command and writes
+  `experiment.run.json` plus `stdout.log`/`stderr.log` into
+  `experiment-evidence/`: observed argv, cwd, pid, start/end time, exit status
+  from `wait()`, created/modified file digests, timeout state, and a
+  `termination_status` that claims only a process outcome.
+- `experiment-doctor verify` re-derives both seals and the run → lock hash chain
+  and checks bundle presence, artifact digests and path boundaries (V001–V006).
+- `captured` adapter maps an evidence bundle onto the existing provenance model,
+  so ED001–ED010 evaluate against recorded observation instead of inference.
+- Validation: 94 new tests (21 lock / 22 run / 19 verify / 32 audit
+  integration), plus `scripts/run_v1_full_pipeline_check.py`, an end-to-end
+  driver over four trees that must reproduce identical ED001–ED010 status
+  vectors. Design and phase records: [docs/v1/](docs/v1/).
+- Deliberately absent: metric extraction from stdout, training-outcome claims,
+  budget capture, third-party tracker integration, compression/upload/signing,
+  and any composite or confidence score.
+
 ## v0.1.0 — 2026-09-27
 
 First release. Read-only provenance and aggregation auditor for ML experiment
