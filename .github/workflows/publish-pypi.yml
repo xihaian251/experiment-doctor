@@ -23,19 +23,19 @@ jobs:
         run: test -z "$(git status --porcelain)"
       - name: Build wheel + sdist
         run: python -m build
-      - name: Verify exactly two artifacts and version 0.1.0
+      - name: Verify exactly two artifacts and version 1.0.0
         run: |
           test "$(ls dist | wc -l)" -eq 2
-          ls dist/experiment_doctor-0.1.0-py3-none-any.whl
-          ls dist/experiment_doctor-0.1.0.tar.gz
+          ls dist/experiment_doctor-1.0.0-py3-none-any.whl
+          ls dist/experiment_doctor-1.0.0.tar.gz
           python - <<'EOF'
           import zipfile
-          whl = "dist/experiment_doctor-0.1.0-py3-none-any.whl"
+          whl = "dist/experiment_doctor-1.0.0-py3-none-any.whl"
           with zipfile.ZipFile(whl) as z:
               name = [n for n in z.namelist() if n.endswith("METADATA")][0]
               meta = z.read(name).decode()
           assert "Name: experiment-doctor" in meta, meta
-          assert "Version: 0.1.0" in meta, meta
+          assert "Version: 1.0.0" in meta, meta
           print("wheel metadata OK")
           EOF
       - name: Publish to PyPI
