@@ -119,7 +119,7 @@ git push 内容                 本地领先 origin 的 9 笔全部上线（v1 �
 | 远端 tags | `v0.1.0`（→ `7c9e550`）、**`v1.0.0`**（→ `fb3a242`） |
 | 本地 HEAD | 与 `origin/master` 一致，`git status --porcelain` 为空 |
 | 发布链上的 tag 位置 | `v1.0.0` 钉在 `fb3a242`；其后的 docs commit 仅改本文件，不影响发行载荷（`docs/` 不进 wheel/sdist） |
-| 工作区杂项 | `dist/` 现存放与 PyPI 一致的那一对文件；本地 Windows 构建的原件移到 `tmp/gh/local_build/`（`tmp/` 已 gitignore，未进入任何 commit） |
+| 工作区杂项 | `dist/` 现存放与 PyPI 逐字节一致的那一对文件（即公开物本身）；比对用的本地 Windows 构建件与临时 venv、smoke 目录均为 `tmp/` 下的一次性脚手架，核对完成后已删除，未进入任何 commit |
 
 ## 8. 中途需要授权的两次决策
 
