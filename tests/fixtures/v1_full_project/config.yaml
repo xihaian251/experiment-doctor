@@ -1,0 +1,4 @@
+# Declared inputs for the Phase 5 full-pipeline golden.
+# `init` fingerprints this file; nothing reads its values.
+epochs: 1
+lr: 0.01

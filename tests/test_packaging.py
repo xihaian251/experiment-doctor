@@ -60,12 +60,14 @@ def test_rule_registry_is_exactly_ed001_to_ed010_in_order() -> None:
     assert [rule.rule_id for rule in RULES] == [f"ED{i:03d}" for i in range(1, 11)]
 
 
-def test_adapter_registry_ships_the_four_expected_adapters() -> None:
+def test_adapter_registry_ships_the_expected_adapters() -> None:
     assert {spec.name for spec in available_adapters()} == {
         "generic",
         "gmmvi-exp3",
         "torchssl",
         "crda",
+        # v1 Phase 4: reads an experiment-doctor evidence bundle
+        "captured",
     }
 
 
