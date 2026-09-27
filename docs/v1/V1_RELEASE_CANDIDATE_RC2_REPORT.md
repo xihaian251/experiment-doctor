@@ -5,6 +5,7 @@
 - 上一份：`V1_RELEASE_CANDIDATE_REPORT.md`（RC1）；台账：`V1_RELEASE_CHECKLIST.md`
 - 本轮结束状态：**三笔本地 commit，工作树 clean，未 push、未 tag、未发布**；版本号**未**改动（Step 3 要求先等人工确认）
 - 记法：`<repo>` = 本仓库 git toplevel；`<parent>/` = 仓库根的同级目录
+- 状态更新（RC Final，同日）：本文件为 **RC2 时点快照**。文中"三笔 commit / 版本号未改动 / §8 D1、D2 待决"已过时：版本决策定为 `1.0.0` 并落地于本地第 6 笔 commit `717e3cf`，D2（`description` 文案）确认本轮不动；后续事实以 `V1_RELEASE_FINAL_REPORT.md` 为准。
 
 ---
 
