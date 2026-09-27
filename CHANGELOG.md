@@ -1,9 +1,10 @@
 # Changelog
 
-## Unreleased — v1 capture pipeline (release candidate, not published)
+## v1.0.0 — 2026-09-27
 
 Additive: the v0.1 audit path, its rules, schema and acceptance adapters are
-byte-for-byte unchanged, and its four commands behave as before.
+byte-for-byte unchanged, and its four commands behave as before. Release
+decision recorded here; the distribution is not published yet.
 
 - `experiment-doctor init` writes `experiment.lock.json`: code revision and
   working-tree state, interpreter / installed packages / platform, fingerprints

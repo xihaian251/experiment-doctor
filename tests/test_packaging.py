@@ -1,4 +1,4 @@
-"""Release packaging locks (v0.1.0).
+"""Release packaging locks (v1.0.0).
 
 These tests pin the identities that must survive the wheel/sdist boundary:
 the single version source, the CLI entry point target, the ten-rule registry,
@@ -24,7 +24,7 @@ from experiment_doctor.rules.base import RuleResult
 from experiment_doctor.schema import ExperimentProject
 from tests.builders import make_aggregation, make_family, make_run, project_with
 
-RELEASE_VERSION = "0.1.0"
+RELEASE_VERSION = "1.0.0"
 
 PYPROJECT = tomllib.loads(
     (Path(__file__).resolve().parents[1] / "pyproject.toml").read_text("utf-8")
