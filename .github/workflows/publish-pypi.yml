@@ -1,0 +1,42 @@
+name: Publish to PyPI
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Install build
+        run: pip install build
+      - name: Verify clean tree
+        run: test -z "$(git status --porcelain)"
+      - name: Build wheel + sdist
+        run: python -m build
+      - name: Verify exactly two artifacts and version 0.1.0
+        run: |
+          test "$(ls dist | wc -l)" -eq 2
+          ls dist/experiment_doctor-0.1.0-py3-none-any.whl
+          ls dist/experiment_doctor-0.1.0.tar.gz
+          python - <<'EOF'
+          import zipfile
+          whl = "dist/experiment_doctor-0.1.0-py3-none-any.whl"
+          with zipfile.ZipFile(whl) as z:
+              name = [n for n in z.namelist() if n.endswith("METADATA")][0]
+              meta = z.read(name).decode()
+          assert "Name: experiment-doctor" in meta, meta
+          assert "Version: 0.1.0" in meta, meta
+          print("wheel metadata OK")
+          EOF
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
