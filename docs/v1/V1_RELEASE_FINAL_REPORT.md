@@ -3,7 +3,7 @@
 - 日期：2026-09-27
 - 阶段：RC Final Decision。允许：版本决策落地（两个版本常量 + CHANGELOG）、门禁复跑、wheel/sdist 双干净安装复验、生成本报告。禁止：扩展功能、改 schema/rules/audit/scanner/adapter、push、tag、GitHub Release、PyPI publish
 - 上一份：`docs/v1/V1_RELEASE_CANDIDATE_RC2_REPORT.md`（RC2）；台账：`docs/v1/V1_RELEASE_CHECKLIST.md`
-- 本轮结束状态：**版本号已落地为 `1.0.0`；本地共 6 笔 commit（`e17ab18..HEAD`），工作树 clean；未 push、未 tag、未发布**
+- 本轮结束状态：**版本号已落地为 `1.0.0`（commit `717e3cf`）；工作树 clean；未 push、未 tag、未发布**。本文件随后作为一笔 `docs:` commit 入库（其 sha 由 `git log -1` 读取，本文件不预测自身身份）
 - 记法：`<repo>` = 本仓库 git toplevel；`<parent>/` = 仓库根的同级目录；`<本机用户名>` = 本机账户名
 
 ---
@@ -46,14 +46,16 @@ SemVer 解释：SemVer §4 规定 major 为 0 时 API 不必稳定、任何改�
 
 ## 3. Commit 历史
 
+截至版本落地这一笔（本报告自身的入库 commit 在其后，故此处不预测自己的 sha）：
+
 ```
-717e3cf chore: set release version 1.0.0                      ← 本轮（B3 关闭）
-827071e docs: clarify scan-pattern wording in the RC2 report
-02db843 docs: record RC2 resolution report
-a3b8b82 docs: finalize v1 MVP documentation                   ← Commit C
-45048fe test: add v1 end-to-end validation                    ← Commit B
+717e3cf chore: set release version 1.0.0                       ← 本轮（B3 关闭）
+827071e docs: clarify scan-pattern wording in the RC2 report   ← RC2 收尾
+02db843 docs: record RC2 resolution report                     ← RC2 收尾
+a3b8b82 docs: finalize v1 MVP documentation                    ← Commit C
+45048fe test: add v1 end-to-end validation                     ← Commit B
 dfdd19b feat: add experiment capture and verification pipeline ← Commit A
-e17ab18 docs: record published 0.1.0                          ← origin/master / v0.1.0 线
+e17ab18 docs: record published 0.1.0                           ← origin/master / v0.1.0 线
 ```
 
 | Commit | 内容 | 体量 |
@@ -61,11 +63,11 @@ e17ab18 docs: record published 0.1.0                          ← origin/master 
 | A `feat` | `src/experiment_doctor/v1/**` 15 个 .py、`adapters/captured.py`、adapter 注册、CLI 接线 | 18 files +2054/−5 |
 | B `test` | 4 个 `tests/test_v1_*.py`、5 个 fixture 目录、`scripts/run_v1_full_pipeline_check.py` | 17 files +1893/−1 |
 | C `docs` | `docs/v1/` 9 份 + README + CHANGELOG | 11 files +1903/−6 |
-| RC2 报告 2 笔 | `V1_RELEASE_CANDIDATE_RC2_REPORT.md` 入库 + 扫描模式措辞澄清 | 1+1 files +162/+2 |
+| RC2 报告 2 笔 | `V1_RELEASE_CANDIDATE_RC2_REPORT.md` 入库（+162）与其扫描模式措辞澄清（+2） | 1+1 files |
 | 本轮 `chore` | 版本常量 ×2 + CHANGELOG 段标题 | 3 files +6/−5 |
-| 合计 | 相对 `e17ab18` | **50 files**；未 push 计数 `git rev-list --left-right --count origin/master...HEAD` = `0 6` |
+| 合计至 `717e3cf` | 相对 `e17ab18`：`git diff --shortstat e17ab18..717e3cf` | **48 files, +6018/−15**；`git rev-list --left-right --count origin/master...HEAD` = `0 6` |
 
-已有 tag 仅 `v0.1.0`（→ `7c9e550`）。本轮**未新增 tag**。
+自 `e17ab18` 起，v1 全部工作共 6 笔（后为 7 笔，含本文件），**未 push 计数由 `git rev-list` 现场读取**（本文件不预测自身入库后的数字）。已有 tag 仅 `v0.1.0`（→ `7c9e550`），本轮**未新增 tag**，`git tag --list` 输出仍只有该一行。
 
 ## 4. Package 产物（发布决策所需的哈希）
 
