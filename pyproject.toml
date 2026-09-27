@@ -4,10 +4,12 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "experiment-doctor"
-version = "0.1.dev0"
+dynamic = ["version"]
 description = "Read-only provenance and aggregation audit for ML experiment artifacts"
 readme = "README.md"
 requires-python = ">=3.11"
+license = "Apache-2.0"
+authors = [{ name = "beihai" }]
 dependencies = [
     "pydantic>=2.5",
     "typer>=0.12",
@@ -15,10 +17,13 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=8", "ruff>=0.6", "mypy>=1.8", "types-PyYAML"]
+dev = ["pytest>=8", "ruff>=0.6", "mypy>=1.8", "types-PyYAML", "build>=1.0"]
 
 [project.scripts]
 experiment-doctor = "experiment_doctor.cli:main"
+
+[tool.setuptools.dynamic]
+version = { attr = "experiment_doctor.__version__" }
 
 [tool.setuptools.packages.find]
 where = ["src"]
